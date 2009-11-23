@@ -1,5 +1,6 @@
 package com.legind.swinedroid;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,7 +21,7 @@ import android.util.Log;
 class SSLHandler {
 	private String mHost;
 	private int mPort;
-	private InputStream mIn;
+	private BufferedInputStream mIn;
 	private OutputStream mOut;
 	private SSLSocket mSocket;
 	
@@ -45,7 +46,7 @@ class SSLHandler {
             // RFC 1047
             mSocket.setSoTimeout(300000);
             
-            mIn = mSocket.getInputStream();
+            mIn = new BufferedInputStream(mSocket.getInputStream(), 1024);
             mOut = mSocket.getOutputStream();
 		} catch (NoSuchAlgorithmException e) {
 			Log.e("Swinedroid",e.toString());
@@ -137,7 +138,7 @@ class SSLHandler {
 
     }
     
-    public InputStream getInputStream(){
+    public BufferedInputStream getInputStream(){
     	return mIn;
     }
     

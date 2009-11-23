@@ -46,8 +46,11 @@ public class XMLHandler extends DefaultHandler{
 			SSLHandler sslhandler = new SSLHandler(host, port);
 			sslhandler.open();
 			sslhandler.writeLine("GET /?username=" + username + "&password=" + password + "&call=drivel HTTP/1.0");
+			sslhandler.writeLine("User-Agent: Swinedroid");
 			sslhandler.writeLine("");
-			
+			while(sslhandler.readLine().trim() != ""){
+				continue;
+			}
 			//currentElement.url = url;
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();
