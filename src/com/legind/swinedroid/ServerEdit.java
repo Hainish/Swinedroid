@@ -1,0 +1,90 @@
+package com.legind.swinedroid;
+
+import android.app.Activity;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+
+public class ServerEdit extends Activity {
+	private ServerDbAdapter mDbHelper;
+	
+	private EditText mHostText;
+    private EditText mPortText;
+    private EditText mUsernameText;
+    private EditText mPasswordText;
+    private Long mRowId;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mDbHelper = new ServerDbAdapter(this);
+        mDbHelper.open();
+        setContentView(R.layout.server_edit);
+       
+        mHostText = (EditText) findViewById(R.id.host);
+        mPortText = (EditText) findViewById(R.id.port);
+        mUsernameText = (EditText) findViewById(R.id.username);
+        mPasswordText = (EditText) findViewById(R.id.password);
+      
+        Button confirmButton = (Button) findViewById(R.id.confirm);
+       
+        mRowId = savedInstanceState != null ? savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID) : null;
+        if(mRowId == null){
+        	Bundle extras = getIntent().getExtras();
+        	mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID) : null;
+        }
+       
+        populateFields();
+        confirmButton.setOnClickListener(new View.OnClickListener() {
+
+            public void onClick(View view) {
+            	saveState();
+                setResult(RESULT_OK);
+                finish();
+            }
+          
+        });
+    }
+    
+    private void populateFields(){
+    	if(mRowId != null){
+    		Cursor server = mDbHelper.fetchServer(mRowId);
+    		startManagingCursor(server);
+    		mHostText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST)));
+    		mPortText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT)));
+    		mUsernameText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME)));
+    		mPasswordText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD)));
+    	}
+    }
+    
+    @Override
+    protected void onSaveInstanceState(Bundle outState){
+    	super.onSaveInstanceState(outState);
+    	outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+    }
+    
+    @Override
+    protected void onResume(){
+    	super.onResume();
+    	populateFields();
+    }
+    
+    private void saveState(){
+    	String host = mHostText.getText().toString();
+    	int port = Integer.parseInt(mPortText.getText().toString());
+    	String username = mUsernameText.getText().toString();
+    	String password = mPasswordText.getText().toString();
+    	
+    	if(mRowId == null){
+    		long id = mDbHelper.createServer(host, port, username, password);
+    		if(id > 0){
+    			mRowId = id;
+    		}
+    	
+    	} else {
+    		mDbHelper.updateServer(mRowId, host, port, username, password);
+    	}
+    }
+}

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+	<ScrollView
+		android:id="@+id/scrollview"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:layout_marginTop="10px"
+		>
+
+		<LinearLayout
+			android:id="@+id/scrollinner"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:layout_marginRight="10px"
+			>
+
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+		
+				<TextView android:layout_width="wrap_content"
+					android:layout_height="wrap_content" 
+					android:text="@string/host"
+					android:width="90px"
+					android:gravity="right" />
+				<EditText android:id="@+id/host" 
+				  android:layout_width="fill_parent"
+					android:layout_marginLeft="5px"
+					android:layout_height="wrap_content"
+					android:maxLength="128" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+		
+				<TextView android:layout_width="wrap_content"
+					android:layout_height="wrap_content" 
+					android:text="@string/port"
+					android:gravity="right"
+					android:width="90px" />
+				<EditText android:id="@+id/port" 
+				  android:layout_width="fill_parent"
+					android:layout_marginLeft="5px"
+					android:layout_height="wrap_content"
+					android:inputType="number" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+		
+				<TextView android:layout_width="wrap_content"
+					android:layout_height="wrap_content" 
+					android:text="@string/username"
+					android:gravity="right"
+					android:width="90px" />
+				<EditText android:id="@+id/username" 
+				  android:layout_width="fill_parent"
+					android:layout_marginLeft="5px"
+					android:layout_height="wrap_content"
+					android:maxLength="128" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+		
+				<TextView android:layout_width="wrap_content"
+					android:layout_height="wrap_content" 
+					android:text="@string/password"
+					android:gravity="right"
+					android:width="90px" />
+				<EditText android:id="@+id/password" 
+				  android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:layout_marginLeft="5px"
+					android:inputType="textPassword"
+					android:maxLength="128" />
+			</LinearLayout>
+			
+			<Button android:id="@+id/confirm" 
+			  android:text="@string/confirm"
+			  	android:layout_marginTop="5px"
+				android:layout_width="wrap_content"
+				android:layout_marginLeft="95px"
+				android:layout_height="wrap_content" />
+		</LinearLayout>
+	</ScrollView>
+
+
+</LinearLayout>
