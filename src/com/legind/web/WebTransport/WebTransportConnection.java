@@ -6,8 +6,6 @@ import java.io.OutputStream;
 import java.security.KeyManagementException;
 import java.util.ArrayList;
 
-import android.util.Log;
-
 import com.legind.ssl.SSLHandler.SSLHandler;
 
 public class WebTransportConnection{
@@ -17,6 +15,8 @@ public class WebTransportConnection{
 	private ArrayList<String> lastDocument;
 	
 	public WebTransportConnection(WebTransport webtransport){
+		lastHeaders = new ArrayList<String>();
+		lastDocument = new ArrayList<String>();
 		parent = webtransport;
 	}
 	
