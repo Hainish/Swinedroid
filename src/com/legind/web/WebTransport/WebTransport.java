@@ -9,16 +9,24 @@ public class WebTransport{
 	private boolean rSsl;
 	/* INFO: Don't allow changing socket specifications if rLocked is true */
 	private boolean rLocked;
-	
+
+	/** Initialize the WebTransport object
+	 * @param urlString the url string for the WebTransport
+	 * @throws WebTransportException - If the protocol is not http or https
+	 * @throws MalformedURLException - If the URL is malformed. */
 	public WebTransport(String urlString) throws WebTransportException, MalformedURLException{
 		URL url = new URL(urlString);
 		InitializeWebTransport(url);
 	}
-	
+
+	/** Initialize the WebTransport object
+	 * @param url the url object for the WebTransport
+	 * @throws WebTransportException - If the protocol is not http or https */
 	public WebTransport(URL url) throws WebTransportException{
 		InitializeWebTransport(url);
 	}
 
+	/** Helper method for the WebTransport constructor */
 	private void InitializeWebTransport(URL url) throws WebTransportException{
 		if(url.getProtocol().equalsIgnoreCase("http")){
 			rSsl = false;
@@ -31,6 +39,8 @@ public class WebTransport{
 		rPort = url.getPort();
 	}
 	
+	/** Create a new WebTransportConnection and return it
+	 * @return WebTransportConnection */
 	public WebTransportConnection getConnection(){
 		WebTransportConnection webtransportconnection = new WebTransportConnection(this);
 		return webtransportconnection;

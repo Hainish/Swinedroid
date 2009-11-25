@@ -1,4 +1,4 @@
-package com.legind.swinedroid;
+package com.legind.ssl.TrustManagerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +11,8 @@ import java.security.cert.X509Certificate;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.legind.swinedroid.Swinedroid;
 
 import android.app.ListActivity;
 import android.content.Context;
