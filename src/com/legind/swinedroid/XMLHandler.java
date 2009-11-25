@@ -17,6 +17,10 @@ import org.xml.sax.helpers.DefaultHandler;
 import android.content.Context;
 import android.util.Log;
 
+import com.legind.web.WebTransport.WebTransport;
+import com.legind.web.WebTransport.WebTransportConnection;
+import com.legind.web.WebTransport.WebTransportException;
+
 
 
 public class XMLHandler extends DefaultHandler{
@@ -43,20 +47,19 @@ public class XMLHandler extends DefaultHandler{
 	public void createElement(Context ctx, String host, int port, String username, String password){
 		try{
 			//URL url = new URL("http://" + host + ":" + Integer.toString(port) + "/?username=" + username + "&password=" + password + "&call=drivel");
-			SSLHandler sslhandler = new SSLHandler(host, port);
-			sslhandler.open();
-			sslhandler.writeLine("GET /?username=" + username + "&password=" + password + "&call=drivel HTTP/1.0");
-			sslhandler.writeLine("User-Agent: Swinedroid");
-			sslhandler.writeLine("");
-			while(sslhandler.readLine().trim() != ""){
-				continue;
-			}
-			//currentElement.url = url;
+			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
+			webtransportconnection.open();
+			String[] webrequest = {
+				"GET /?username=" + username + "&password=" + password + "&call=drivel HTTP/1.0",
+				"User-Agent: Swinedroid"};
+			webtransportconnection.sendRequest(webrequest);
+			webtransportconnection.handleHeaders();
+			
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();
 			XMLReader xr = sp.getXMLReader();
 			xr.setContentHandler(this);
-			xr.parse(new InputSource(sslhandler.getInputStream()));
+			xr.parse(new InputSource(webtransportconnection.getInputStream()));
 		} catch(MalformedURLException e){
 			Log.e("Swinedroid",e.toString());
 		} catch (IOException e){
@@ -66,6 +69,8 @@ public class XMLHandler extends DefaultHandler{
 		} catch (ParserConfigurationException e){
 			Log.e("Swinedroid",e.toString());
 		} catch (KeyManagementException e) {
+			Log.e("Swinedroid",e.toString());
+		} catch (WebTransportException e){
 			Log.e("Swinedroid",e.toString());
 		}
 	}

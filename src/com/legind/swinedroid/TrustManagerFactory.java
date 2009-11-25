@@ -1,21 +1,20 @@
 package com.legind.swinedroid;
 
-import android.util.Log;
-import android.app.ListActivity;
-import android.content.Context;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.KeyStoreException;
-import java.security.cert.X509Certificate;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
-import javax.net.ssl.X509TrustManager;
 import javax.net.ssl.TrustManager;
-import com.legind.swinedroid.Swinedroid;
+import javax.net.ssl.X509TrustManager;
+
+import android.app.ListActivity;
+import android.content.Context;
+import android.util.Log;
 
 public final class TrustManagerFactory {
 	private static final String LOG_TAG = "TrustManagerFactory";
