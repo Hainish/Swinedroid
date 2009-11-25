@@ -11,4 +11,5 @@
     <string name="password">Password</string>
     <string name="confirm">Confirm</string>
     <string name="edit_server">Edit Server</string>
+    <string name="ok">Ok</string>
 </resources>
