@@ -40,6 +40,10 @@ public class ServerEdit extends Activity {
 		if(savedInstanceState != null){
 			if(!savedInstanceState.getBoolean(ServerDbAdapter.KEY_ROWID + "_null")){
 				mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+				mHostText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_HOST));
+				mPortText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_PORT));
+				mUsernameText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_USERNAME));
+				mPasswordText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_PASSWORD));
 			} else {
 				mRowId = null;
 			}
@@ -49,11 +53,13 @@ public class ServerEdit extends Activity {
 		
 		if (mRowId == null) {
 			Bundle extras = getIntent().getExtras();
-			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
-					: null;
+			if(extras != null){
+				mRowId = extras.getLong(ServerDbAdapter.KEY_ROWID);
+				populateFields();
+			} else {
+				mRowId = null;
+			}
 		}
-
-		populateFields();
 
 		final Pattern hostPattern = Pattern.compile("^((?:[\\w-]+\\.)*\\w[\\w-]{0,66})\\.([a-z]{2,6}(?:\\.[a-z]{2})?)$");
 		confirmButton.setOnClickListener(new View.OnClickListener() {
@@ -100,15 +106,13 @@ public class ServerEdit extends Activity {
 		if(mRowId != null){
 			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", false);
 			outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+			outState.putString(ServerDbAdapter.KEY_HOST, mHostText.getText().toString());
+			outState.putString(ServerDbAdapter.KEY_PORT, mPortText.getText().toString());
+			outState.putString(ServerDbAdapter.KEY_USERNAME, mUsernameText.getText().toString());
+			outState.putString(ServerDbAdapter.KEY_PASSWORD, mPasswordText.getText().toString());
 		} else {
 			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", true);
 		}
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-		//populateFields();
 	}
 
 	private void saveState() {
