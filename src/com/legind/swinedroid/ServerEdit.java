@@ -37,8 +37,16 @@ public class ServerEdit extends Activity {
 
 		Button confirmButton = (Button) findViewById(R.id.confirm);
 
-		mRowId = savedInstanceState != null ? savedInstanceState
-				.getLong(ServerDbAdapter.KEY_ROWID) : null;
+		if(savedInstanceState != null){
+			if(!savedInstanceState.getBoolean(ServerDbAdapter.KEY_ROWID + "_null")){
+				mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+			} else {
+				mRowId = null;
+			}
+		} else {
+			mRowId = null;
+		}
+		
 		if (mRowId == null) {
 			Bundle extras = getIntent().getExtras();
 			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
@@ -89,13 +97,18 @@ public class ServerEdit extends Activity {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+		if(mRowId != null){
+			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", false);
+			outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+		} else {
+			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", true);
+		}
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		populateFields();
+		//populateFields();
 	}
 
 	private void saveState() {
