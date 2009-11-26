@@ -4,23 +4,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.AlertDialog.Builder;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
+
+import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
 
 public class ServerEdit extends Activity {
 	private ServerDbAdapter mDbHelper;
+	private ErrorMessageHandler mEMH;
 
 	private EditText mHostText;
 	private EditText mPortText;
@@ -33,6 +27,7 @@ public class ServerEdit extends Activity {
 		super.onCreate(savedInstanceState);
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
+		mEMH = new ErrorMessageHandler(this, findViewById(R.id.server_edit_error_layout_root));
 		setContentView(R.layout.server_edit);
 
 		mHostText = (EditText) findViewById(R.id.host);
@@ -65,7 +60,7 @@ public class ServerEdit extends Activity {
 				if(port < 1 || port > 65535)
 					errorString += (errorString == "" ? "" : "\n\n") + "Invalid port specification.  Valid range is 1-65535.";
 				if(errorString != ""){
-					errorMessage(errorString);
+					mEMH.DisplayErrorMessage(errorString);
 				} else {
 					saveState();
 					setResult(RESULT_OK);
@@ -119,33 +114,4 @@ public class ServerEdit extends Activity {
 		}
 	}
 
-	private void errorMessage(String message) {
-		final Builder builder;
-		Dialog alertDialog;
-
-		OnClickListener okListener = new OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.cancel();
-				return;
-
-			}
-		};
-		
-		LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
-		View layout = inflater.inflate(R.layout.server_edit_error,
-		                               (ViewGroup) findViewById(R.id.server_edit_error_layout_root));
-
-		TextView text = (TextView) layout.findViewById(R.id.server_edit_error_text);
-		text.setText(message);
-
-		ImageView image = (ImageView) layout.findViewById(R.id.server_edit_error_icon);
-		image.setImageResource(R.drawable.icon);
-
-		builder = new AlertDialog.Builder(this);
-		builder.setView(layout);
-		builder.setPositiveButton("Ok", okListener);
-		alertDialog = builder.create();
-		alertDialog.show();
-
-	}
 }
