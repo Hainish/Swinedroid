@@ -44,7 +44,7 @@ public class XMLHandler extends DefaultHandler{
 		currentElement.something = new String(ch);
 	}
 	
-	public void createElement(Context ctx, String host, int port, String username, String password){
+	public void createElement(Context ctx, String host, int port, String username, String password) throws IOException{
 		try{
 			//URL url = new URL("http://" + host + ":" + Integer.toString(port) + "/?username=" + username + "&password=" + password + "&call=drivel");
 			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
@@ -61,8 +61,6 @@ public class XMLHandler extends DefaultHandler{
 			xr.setContentHandler(this);
 			xr.parse(new InputSource(webtransportconnection.getInputStream()));
 		} catch(MalformedURLException e){
-			Log.e("Swinedroid",e.toString());
-		} catch (IOException e){
 			Log.e("Swinedroid",e.toString());
 		} catch (SAXException e){
 			Log.e("Swinedroid",e.toString());

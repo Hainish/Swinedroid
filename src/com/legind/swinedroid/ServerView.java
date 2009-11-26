@@ -1,9 +1,14 @@
 package com.legind.swinedroid;
 
+import java.io.IOException;
+
 import android.app.Activity;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
+
+import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
 
 public class ServerView extends Activity {
 	private ServerDbAdapter mDbHelper;
@@ -14,6 +19,8 @@ public class ServerView extends Activity {
 	private String mHostText;
 	private String mUsernameText;
 	private String mPasswordText;
+	private ErrorMessageHandler mEMH;
+	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +29,8 @@ public class ServerView extends Activity {
         mDbHelper = new ServerDbAdapter(this);
         mDbHelper.open();
         setContentView(R.layout.server_view);
+        
+        mEMH = new ErrorMessageHandler(Swinedroid.LA, findViewById(R.id.server_edit_error_layout_root));
         
         mSometextText = (TextView) findViewById(R.id.sometext);
         
@@ -39,7 +48,14 @@ public class ServerView extends Activity {
     		mUsernameText = server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
     		mPasswordText = server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
     	}
-		mXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText);
+		try {
+			mXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText);
+		} catch (IOException e) {
+			Log.e(LOG_TAG, e.toString());
+			mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+			mDbHelper.close();
+			finish();
+		}
 		mSometextText.setText(mXMLHandler.currentElement.something);
     }
     

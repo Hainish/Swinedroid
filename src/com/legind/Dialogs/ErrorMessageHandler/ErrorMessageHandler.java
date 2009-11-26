@@ -22,6 +22,14 @@ public class ErrorMessageHandler{
 		mCtx = ctx;
 		mV = v;
 	}
+	
+	public ErrorMessageHandler(View v){
+		mV = v;
+	}
+	
+	public void setContext(Context ctx){
+		mCtx = ctx;
+	}
 
 	public void DisplayErrorMessage(String message) {
 		final Builder builder;
