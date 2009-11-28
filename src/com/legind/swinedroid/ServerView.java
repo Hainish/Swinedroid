@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.TextView;
+import com.legind.swinedroid.xml.OverviewXMLHandler;
 
 import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
 
@@ -19,7 +20,7 @@ public class ServerView extends Activity implements Runnable {
 	private ServerDbAdapter mDbHelper;
 	private TextView mSometextText;
 	private Long mRowId;
-	private XMLHandler mXMLHandler;
+	private OverviewXMLHandler mOverviewXMLHandler;
 	private int mPortInt;
 	private String mHostText;
 	private String mUsernameText;
@@ -34,7 +35,7 @@ public class ServerView extends Activity implements Runnable {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		mXMLHandler = new XMLHandler();
+		mOverviewXMLHandler = new OverviewXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
 		setContentView(R.layout.server_view);
@@ -84,8 +85,7 @@ public class ServerView extends Activity implements Runnable {
 
 	public void run() {
 		try {
-			mXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText,
-					mPasswordText);
+			mOverviewXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "overview");
 		} catch (IOException e) {
 			Log.e(LOG_TAG, e.toString());
 			handler.sendEmptyMessage(IO_ERROR);
@@ -108,7 +108,7 @@ public class ServerView extends Activity implements Runnable {
 					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
 				break;
 				case DOCUMENT_RETRIEVED:
-					mSometextText.setText(mXMLHandler.currentElement.something);
+					mSometextText.setText(mOverviewXMLHandler.currentElement.something);
 				break;
 			}
 			if(message.what != DOCUMENT_RETRIEVED){

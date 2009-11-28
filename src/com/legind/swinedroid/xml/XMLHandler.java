@@ -1,4 +1,4 @@
-package com.legind.swinedroid;
+package com.legind.swinedroid.xml;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -8,7 +8,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -24,33 +23,13 @@ import com.legind.web.WebTransport.WebTransportException;
 
 
 public class XMLHandler extends DefaultHandler{
-	private boolean inSomething = false;
-	Element currentElement = new Element();
-	
-	public void startElement(String uri, String name, String qName, Attributes atts){
-		if(name.trim().equals("something"))
-			inSomething = true;
-	}
-
-	public void endElement(String uri, String name, String qName){
-		if(name.trim().equals("something"))
-			inSomething = false;
-	}
-	
-	public void characters(char ch[], int start, int length){
-		String chars = (new String(ch).substring(start, start + length));
-		if(inSomething)
-			currentElement.something = chars;
-		currentElement.something = new String(ch);
-	}
-	
-	public void createElement(Context ctx, String host, int port, String username, String password) throws IOException, SAXException{
+	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException{
 		try{
 			//URL url = new URL("http://" + host + ":" + Integer.toString(port) + "/?username=" + username + "&password=" + password + "&call=drivel");
 			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
 			webtransportconnection.open();
 			String[] webrequest = {
-				"GET /?username=" + username + "&password=" + password + "&call=drivel HTTP/1.0",
+				"GET /?username=" + username + "&password=" + password + "&call=" + call + " HTTP/1.0",
 				"User-Agent: Swinedroid"};
 			webtransportconnection.sendRequest(webrequest);
 			webtransportconnection.handleHeaders();
