@@ -8,12 +8,14 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
 
-public class ServerView extends Activity {
+public class ServerView extends Activity implements Runnable {
 	private ServerDbAdapter mDbHelper;
 	private TextView mSometextText;
 	private Long mRowId;
@@ -23,7 +25,11 @@ public class ServerView extends Activity {
 	private String mUsernameText;
 	private String mPasswordText;
 	private ErrorMessageHandler mEMH;
+	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
+	private final int DOCUMENT_RETRIEVED = 0;
+	private final int IO_ERROR = 1;
+	private final int XML_ERROR = 2;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -33,8 +39,7 @@ public class ServerView extends Activity {
 		mDbHelper.open();
 		setContentView(R.layout.server_view);
 
-		ProgressDialog dialog = ProgressDialog.show(this, "",
-				"Loading. Please wait...", true);
+		pd = ProgressDialog.show(this, "", "Loading. Please wait...", true);
 
 		mEMH = new ErrorMessageHandler(Swinedroid.LA,
 				findViewById(R.id.server_edit_error_layout_root));
@@ -61,22 +66,9 @@ public class ServerView extends Activity {
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
 		}
-		try {
-			mXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText,
-					mPasswordText);
-		} catch (IOException e) {
-			Log.e(LOG_TAG, e.toString());
-			mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
-			mDbHelper.close();
-			finish();
-		} catch (SAXException e) {
-			Log.e(LOG_TAG, e.toString());
-			mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
-			mDbHelper.close();
-			finish();
-		}
-		dialog.dismiss();
-		mSometextText.setText(mXMLHandler.currentElement.something);
+
+		Thread thread = new Thread(this);
+		thread.start();
 	}
 
 	@Override
@@ -89,4 +81,41 @@ public class ServerView extends Activity {
 	protected void onResume() {
 		super.onResume();
 	}
+
+	public void run() {
+		try {
+			mXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText,
+					mPasswordText);
+		} catch (IOException e) {
+			Log.e(LOG_TAG, e.toString());
+			handler.sendEmptyMessage(IO_ERROR);
+		} catch (SAXException e) {
+			Log.e(LOG_TAG, e.toString());
+			handler.sendEmptyMessage(XML_ERROR);
+		}
+		handler.sendEmptyMessage(DOCUMENT_RETRIEVED);
+	}
+
+	private Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message message) {
+			pd.dismiss();
+			switch(message.what){
+				case IO_ERROR:
+					mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+				break;
+				case XML_ERROR:
+					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
+				break;
+				case DOCUMENT_RETRIEVED:
+					mSometextText.setText(mXMLHandler.currentElement.something);
+				break;
+			}
+			if(message.what != DOCUMENT_RETRIEVED){
+				mDbHelper.close();
+				finish();
+			}
+
+		}
+	};
 }
