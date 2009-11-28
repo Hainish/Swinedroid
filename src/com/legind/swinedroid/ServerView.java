@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,6 +32,9 @@ public class ServerView extends Activity {
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
 		setContentView(R.layout.server_view);
+
+		ProgressDialog dialog = ProgressDialog.show(this, "",
+				"Loading. Please wait...", true);
 
 		mEMH = new ErrorMessageHandler(Swinedroid.LA,
 				findViewById(R.id.server_edit_error_layout_root));
@@ -71,6 +75,7 @@ public class ServerView extends Activity {
 			mDbHelper.close();
 			finish();
 		}
+		dialog.dismiss();
 		mSometextText.setText(mXMLHandler.currentElement.something);
 	}
 
