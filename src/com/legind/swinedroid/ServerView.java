@@ -13,6 +13,7 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.TextView;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
+import com.legind.swinedroid.xml.XMLHandlerException;
 
 import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
 
@@ -28,9 +29,10 @@ public class ServerView extends Activity implements Runnable {
 	private ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
-	private final int DOCUMENT_RETRIEVED = 0;
+	private final int DOCUMENT_VALID = 0;
 	private final int IO_ERROR = 1;
 	private final int XML_ERROR = 2;
+	private final int SERVER_ERROR = 3;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +42,7 @@ public class ServerView extends Activity implements Runnable {
 		mDbHelper.open();
 		setContentView(R.layout.server_view);
 
-		pd = ProgressDialog.show(this, "", "Loading. Please wait...", true);
+		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
 
 		mEMH = new ErrorMessageHandler(Swinedroid.LA,
 				findViewById(R.id.server_edit_error_layout_root));
@@ -92,8 +94,15 @@ public class ServerView extends Activity implements Runnable {
 		} catch (SAXException e) {
 			Log.e(LOG_TAG, e.toString());
 			handler.sendEmptyMessage(XML_ERROR);
+		} catch (XMLHandlerException e){
+			Log.e(LOG_TAG, e.toString());
+			Message msg = Message.obtain();
+			msg.setTarget(handler);
+			msg.what = SERVER_ERROR;
+			msg.obj = e.getMessage();
+			msg.sendToTarget();
 		}
-		handler.sendEmptyMessage(DOCUMENT_RETRIEVED);
+		handler.sendEmptyMessage(DOCUMENT_VALID);
 	}
 
 	private Handler handler = new Handler() {
@@ -107,11 +116,14 @@ public class ServerView extends Activity implements Runnable {
 				case XML_ERROR:
 					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
 				break;
-				case DOCUMENT_RETRIEVED:
+				case SERVER_ERROR:
+					mEMH.DisplayErrorMessage((String) message.obj);
+				break;
+				case DOCUMENT_VALID:
 					mSometextText.setText(mOverviewXMLHandler.currentElement.something);
 				break;
 			}
-			if(message.what != DOCUMENT_RETRIEVED){
+			if(message.what != DOCUMENT_VALID){
 				mDbHelper.close();
 				finish();
 			}

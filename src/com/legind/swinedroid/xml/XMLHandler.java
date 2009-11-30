@@ -8,6 +8,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -23,7 +24,26 @@ import com.legind.web.WebTransport.WebTransportException;
 
 
 public class XMLHandler extends DefaultHandler{
-	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException{
+	private boolean inError = false;
+	private String errorString = null;
+	
+	public void startElement(String uri, String name, String qName, Attributes atts){
+		if(name.trim().equals("error"))
+			inError = true;
+	}
+
+	public void endElement(String uri, String name, String qName){
+		if(name.trim().equals("error"))
+			inError = false;
+	}
+
+	public void characters(char ch[], int start, int length){
+		String chars = (new String(ch).substring(start, start + length));
+		if(inError)
+			errorString = chars;
+	}
+	
+	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
 		try{
 			//URL url = new URL("http://" + host + ":" + Integer.toString(port) + "/?username=" + username + "&password=" + password + "&call=drivel");
 			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
@@ -39,6 +59,9 @@ public class XMLHandler extends DefaultHandler{
 			XMLReader xr = sp.getXMLReader();
 			xr.setContentHandler(this);
 			xr.parse(new InputSource(webtransportconnection.getInputStream()));
+			if(errorString != null){
+				 throw new XMLHandlerException(errorString);
+			}
 		} catch(MalformedURLException e){
 			Log.e("Swinedroid",e.toString());
 		} catch (ParserConfigurationException e){
