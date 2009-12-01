@@ -70,7 +70,9 @@ public class ServerEdit extends Activity {
 				Matcher hostMatcher = hostPattern.matcher(mHostText.getText().toString());
 				if(!hostMatcher.matches())
 					errorString += "Invalid host specification.  Please make sure you entered a valid host.";
-				int port = Integer.parseInt(mPortText.getText().toString());
+				int port = 0;
+				if(mPortText.getText().toString().length() != 0)
+					port = Integer.parseInt(mPortText.getText().toString());
 				if(port < 1 || port > 65535)
 					errorString += (errorString == "" ? "" : "\n\n") + "Invalid port specification.  Valid range is 1-65535.";
 				if(errorString != ""){

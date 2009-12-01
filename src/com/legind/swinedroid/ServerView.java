@@ -11,11 +11,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
-import com.legind.swinedroid.xml.OverviewXMLHandler;
-import com.legind.swinedroid.xml.XMLHandlerException;
 
 import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
+import com.legind.swinedroid.xml.OverviewXMLHandler;
+import com.legind.swinedroid.xml.XMLHandlerException;
 
 public class ServerView extends Activity implements Runnable {
 	private ServerDbAdapter mDbHelper;
@@ -69,6 +70,13 @@ public class ServerView extends Activity implements Runnable {
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
 		}
+		
+		mSometextText.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View view) {
+				mEMH.setContext(ServerView.this);
+				mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+			}
+		});
 
 		Thread thread = new Thread(this);
 		thread.start();

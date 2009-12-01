@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Swinedroid</string>
-    <string name="no_servers">No Servers Yet</string>
     <string name="menu_insert">Add Server</string>
     <string name="menu_delete">Delete Server</string>
     <string name="menu_edit">Edit Server</string>
@@ -12,4 +11,5 @@
     <string name="confirm">Confirm</string>
     <string name="edit_server">Edit Server</string>
     <string name="ok">Ok</string>
+    <string name="no_servers">No servers!\n\nPlease add a server to continue.</string>
 </resources>
