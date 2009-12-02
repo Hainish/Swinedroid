@@ -45,7 +45,6 @@ public class XMLHandler extends DefaultHandler{
 	
 	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
 		try{
-			//URL url = new URL("http://" + host + ":" + Integer.toString(port) + "/?username=" + username + "&password=" + password + "&call=drivel");
 			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
 			webtransportconnection.open();
 			String[] webrequest = {

@@ -66,10 +66,10 @@
 					android:layout_height="1dip"
 					android:background="#909090" />
 				<TextView
-					android:id="@+id/sometext"
+					android:id="@+id/last_24_high"
 					android:layout_width="wrap_content"
 					android:layout_height="25dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FF0000" />
@@ -77,7 +77,7 @@
 					android:id="@+id/last_24_med"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFF00" />
@@ -85,7 +85,7 @@
 					android:id="@+id/last_24_low"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#00FF00" />
@@ -93,7 +93,7 @@
 					android:id="@+id/last_24_total"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFFFF" />
@@ -120,7 +120,7 @@
 					android:id="@+id/last_72_high"
 					android:layout_width="wrap_content"
 					android:layout_height="25dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FF0000" />
@@ -128,7 +128,7 @@
 					android:id="@+id/last_72_med"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFF00" />
@@ -136,7 +136,7 @@
 					android:id="@+id/last_72_low"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#00FF00" />
@@ -144,7 +144,7 @@
 					android:id="@+id/last_72_total"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFFFF" />
@@ -168,34 +168,34 @@
 					android:layout_height="1dip"
 					android:background="#909090" />
 				<TextView
-					android:id="@+id/alltime_high"
+					android:id="@+id/all_time_high"
 					android:layout_width="wrap_content"
 					android:layout_height="25dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FF0000" />
 				<TextView
-					android:id="@+id/alltime_med"
+					android:id="@+id/all_time_med"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFF00" />
 				<TextView
-					android:id="@+id/alltime_low"
+					android:id="@+id/all_time_low"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#00FF00" />
 				<TextView
-					android:id="@+id/alltime_total"
+					android:id="@+id/all_time_total"
 					android:layout_width="wrap_content"
 					android:layout_height="26dip"
-					android:text="0"
+					android:text="-"
 					android:gravity="center"
 					android:layout_marginLeft="2dip"
 					android:textColor="#FFFFFF" />
