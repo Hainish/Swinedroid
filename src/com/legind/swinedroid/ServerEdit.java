@@ -10,7 +10,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import com.legind.Dialogs.ErrorMessageHandler.ErrorMessageHandler;
+import com.legind.Dialogs.ErrorMessageHandler;
 
 public class ServerEdit extends Activity {
 	private ServerDbAdapter mDbHelper;

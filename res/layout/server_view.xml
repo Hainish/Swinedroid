@@ -2,12 +2,22 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:padding="6dip">
+    
+	<TextView
+		android:id="@+id/server_view_title"
+		android:layout_width="wrap_content"
+		android:layout_height="26dip"
+		android:textStyle="bold"
+		android:textSize="18sp"
+		android:gravity="center" />
     <LinearLayout
 		android:id="@+id/severity_labels"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:orientation="horizontal">
+		android:orientation="horizontal"
+		android:layout_below="@id/server_view_title">
 		<LinearLayout
 			android:id="@+id/severity_text_wrapper"
 			android:layout_width="wrap_content"
@@ -202,5 +212,12 @@
 			</LinearLayout>
 		</LinearLayout>
 	</LinearLayout>
-
+	<ListView android:id="@+id/android:list"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="30dip"
+		android:layout_marginBottom="10px"
+		android:layout_marginLeft="10px"
+		android:layout_marginRight="10px"
+		android:layout_below="@id/severity_labels" />
 </RelativeLayout>

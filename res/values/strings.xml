@@ -12,4 +12,7 @@
     <string name="edit_server">Edit Server</string>
     <string name="ok">Ok</string>
     <string name="no_servers">No servers!\n\nPlease add a server to continue.</string>
+    <string name="menu_refresh">Refresh Statistics</string>
+    <string name="alert_severity">Alert Severity</string>
+    <string name="alert_level_prompt">Choose an alert level</string>
 </resources>

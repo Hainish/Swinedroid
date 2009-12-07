@@ -1,4 +1,4 @@
-package com.legind.Dialogs.ErrorMessageHandler;
+package com.legind.Dialogs;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -14,21 +14,14 @@ import android.widget.TextView;
 
 import com.legind.swinedroid.R;
 
-public class ErrorMessageHandler{
-	private Context mCtx;
-	private View mV;
-	
-	public ErrorMessageHandler(Context ctx, View v){
-		mCtx = ctx;
-		mV = v;
+public class ErrorMessageHandler extends MessageHandler{
+
+	public ErrorMessageHandler(Context ctx, View v) {
+		super(ctx, v);
 	}
-	
+
 	public ErrorMessageHandler(View v){
-		mV = v;
-	}
-	
-	public void setContext(Context ctx){
-		mCtx = ctx;
+		super(v);
 	}
 
 	public void DisplayErrorMessage(String message) {
