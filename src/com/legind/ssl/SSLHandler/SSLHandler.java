@@ -37,6 +37,7 @@ public class SSLHandler {
 	        SSLContext sslContext = null;
 			sslContext = SSLContext.getInstance("TLS");
 			//TrustManagerFactory.addCertificateChain(mHost + ":" + Integer.toString(mPort), chain);
+			/* TODO: Implement secure connection with authentication - set to true below */
 	        sslContext.init(null, new TrustManager[] {
 	                TrustManagerFactory.get(mHost, false)
 	        }, new SecureRandom());

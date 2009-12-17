@@ -13,6 +13,15 @@
     <string name="ok">Ok</string>
     <string name="no_servers">No servers!\n\nPlease add a server to continue.</string>
     <string name="menu_refresh">Refresh Statistics</string>
+    <string name="search_alerts">Search Alerts</string>
     <string name="alert_severity">Alert Severity</string>
+    <string name="search_term">Search Term</string>
+    <string name="from">From</string>
+    <string name="the_beginning">The Beginning</string>
+    <string name="to">To</string>
+    <string name="the_end">The End</string>
+    <string name="change_date">Change Date</string>
+    <string name="search">Search</string>
+    <string name="cancel">Cancel</string>
     <string name="alert_level_prompt">Choose an alert level</string>
 </resources>

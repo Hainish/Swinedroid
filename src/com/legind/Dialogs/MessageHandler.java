@@ -1,9 +1,10 @@
 package com.legind.Dialogs;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.View;
 
-class MessageHandler{
+class MessageHandler extends Activity{
 	protected Context mCtx;
 	protected View mV;
 	

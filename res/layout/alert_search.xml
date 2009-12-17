@@ -4,22 +4,115 @@
 	android:orientation="vertical"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-	android:padding="10dp"
 	>
-	<LinearLayout android:orientation="horizontal"
+	<ScrollView
+		android:id="@+id/scrollview"
 		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
-		<TextView
-			android:layout_width="90px"
-			android:layout_height="wrap_content"
-			android:layout_marginRight="5px" 
-			android:text="@string/alert_severity"
-			android:gravity="right" />
-		<Spinner 
-			android:id="@+id/alert_level_spinner"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:padding="10dp"
+		>
+		<LinearLayout
+			android:id="@+id/scrollinner"
 			android:layout_width="fill_parent"
 			android:layout_height="wrap_content"
-			android:drawSelectorOnTop="true"
-			android:prompt="@string/alert_level_prompt" />
+			android:orientation="vertical"
+			android:layout_marginRight="10px"
+			>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+				<TextView
+					android:layout_width="90px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/alert_severity"
+					android:gravity="right" />
+				<Spinner 
+					android:id="@+id/alert_level_spinner"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:drawSelectorOnTop="true"
+					android:prompt="@string/alert_level_prompt" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+				<TextView
+					android:layout_width="90px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/search_term"
+					android:gravity="right" />
+				<EditText
+					android:id="@+id/search_term_edit_text"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+				<TextView
+					android:layout_width="90px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/from"
+					android:gravity="right" />
+				<TextView android:id="@+id/startDateText"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="18sp"
+					android:textColor="#FFFFFF"
+					android:text="@string/the_beginning"
+					android:layout_weight="2"/>
+				<TextView android:id="@+id/startTimeText"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="18sp"
+					android:textColor="#FFFFFF"
+					android:layout_weight="3"/>
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content">
+				<TextView
+					android:layout_width="90px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/to"
+					android:gravity="right" />
+				<TextView android:id="@+id/endDateText"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="18sp"
+					android:textColor="#FFFFFF"
+					android:text="@string/the_end"
+					android:layout_weight="2" />
+				<TextView android:id="@+id/endTimeText"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="18sp"
+					android:textColor="#FFFFFF"
+					android:layout_weight="3"/>
+			</LinearLayout>
+		</LinearLayout>
+	</ScrollView>
+	<LinearLayout android:orientation="horizontal"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/grey"
+		android:layout_marginTop="10dp">
+		<Button android:id="@+id/search_button" 
+			android:text="@string/search"
+		  	android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
+		<Button android:id="@+id/cancel_button" 
+			android:text="@string/cancel"
+			android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
 	</LinearLayout>
 </LinearLayout>

@@ -22,7 +22,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.legind.Dialogs.AlertSearchHandler;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
@@ -49,13 +48,13 @@ public class ServerView extends ListActivity implements Runnable {
 	private String mUsernameText;
 	private String mPasswordText;
 	private ErrorMessageHandler mEMH;
-	private AlertSearchHandler mASH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
 	private final int DOCUMENT_VALID = 0;
 	private final int IO_ERROR = 1;
 	private final int XML_ERROR = 2;
 	private final int SERVER_ERROR = 3;
+	private final int ACTIVITY_SEARCH = 0;
 	private static final int REFRESH_ID = Menu.FIRST;
 	static final String[] OPTIONS = new String[] {
 		"View Latest Alerts",
@@ -80,10 +79,6 @@ public class ServerView extends ListActivity implements Runnable {
 		// Display all errors on the Swinedroid ListActivity
 		mEMH = new ErrorMessageHandler(Swinedroid.LA,
 				findViewById(R.id.server_edit_error_layout_root));
-
-		// Display the alert search on this ListActivity
-		mASH = new AlertSearchHandler(this,
-				findViewById(R.id.alert_search_root));
 
 		mServerViewTitleText = (TextView) findViewById(R.id.server_view_title);
 		mAllTimeHighText = (TextView) findViewById(R.id.all_time_high);
@@ -164,7 +159,9 @@ public class ServerView extends ListActivity implements Runnable {
         super.onListItemClick(l, v, position, id);
         switch(position){
 	        case 1:
-	        	mASH.DisplaySearchDialog();
+	        	Intent i = new Intent(this, AlertSearch.class);
+	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
+	        	startActivityForResult(i, ACTIVITY_SEARCH);
 	        break;
         }
         //Intent i = new Intent(this, ServerView.class);
