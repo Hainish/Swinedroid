@@ -79,8 +79,33 @@ public class AlertSearch extends Activity{
 	    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 	    mSpinner.setAdapter(adapter);
 
-		mRowId = savedInstanceState != null ? savedInstanceState
-				.getLong(ServerDbAdapter.KEY_ROWID) : null;
+		if(savedInstanceState != null){
+			if(!savedInstanceState.getBoolean(ServerDbAdapter.KEY_ROWID + "_null")){
+				mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+			} else {
+				mRowId = null;
+			}
+			mStartYear = savedInstanceState.getInt("mStartYear");
+			mStartMonth = savedInstanceState.getInt("mStartMonth");
+			mStartDay = savedInstanceState.getInt("mStartDay");
+			mStartHour = savedInstanceState.getInt("mStartHour");
+			mStartMinute = savedInstanceState.getInt("mStartMinute");
+			if(mStartYear > 0){
+		        updateStartTimeText();
+		        updateStartDateText();
+			}
+			mEndYear = savedInstanceState.getInt("mEndYear");
+			mEndMonth = savedInstanceState.getInt("mEndMonth");
+			mEndDay = savedInstanceState.getInt("mEndDay");
+			mEndHour = savedInstanceState.getInt("mEndHour");
+			mEndMinute = savedInstanceState.getInt("mEndMinute");
+			if(mEndYear > 0){
+		        updateEndTimeText();
+		        updateEndDateText();
+			}
+		} else {
+			mRowId = null;
+		}
 		if (mRowId == null) {
 			Bundle extras = getIntent().getExtras();
 			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
@@ -115,6 +140,27 @@ public class AlertSearch extends Activity{
 			}
 		});
 
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if(mRowId != null){
+			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", false);
+			outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+		} else {
+			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", true);
+		}
+		outState.putInt("mStartYear", mStartYear);
+		outState.putInt("mStartMonth", mStartMonth);
+		outState.putInt("mStartDay", mStartDay);
+		outState.putInt("mStartHour", mStartHour);
+		outState.putInt("mStartMinute", mStartMinute);
+		outState.putInt("mEndYear", mEndYear);
+		outState.putInt("mEndMonth", mEndMonth);
+		outState.putInt("mEndDay", mEndDay);
+		outState.putInt("mEndHour", mEndHour);
+		outState.putInt("mEndMinute", mEndMinute);
 	}
 	
 	@Override
