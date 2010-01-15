@@ -44,11 +44,15 @@ public class XMLHandler extends DefaultHandler{
 	}
 	
 	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
+		createElement(ctx, host, port, username, password, call, "");
+	}
+	
+	public void createElement(Context ctx, String host, int port, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		try{
 			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
 			webtransportconnection.open();
 			String[] webrequest = {
-				"GET /?username=" + username + "&password=" + password + "&call=" + call + " HTTP/1.0",
+				"GET /?username=" + username + "&password=" + password + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.0",
 				"User-Agent: Swinedroid"};
 			webtransportconnection.sendRequest(webrequest);
 			webtransportconnection.handleHeaders();
