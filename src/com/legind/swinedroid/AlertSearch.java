@@ -6,7 +6,9 @@ import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.ArrayAdapter;
@@ -51,6 +53,8 @@ public class AlertSearch extends Activity{
 	static final int END_DATE_DIALOG_ID = 1;
 	static final int START_TIME_DIALOG_ID = 3;
 	static final int END_TIME_DIALOG_ID = 4;
+
+	private final int ACTIVITY_ALERT_LIST = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -132,6 +136,26 @@ public class AlertSearch extends Activity{
 			public void onClick(View v) {
 				if(mEndYear > 0)
 					showDialog(END_TIME_DIALOG_ID);
+			}
+		});
+		mSearchButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+	        	Intent i = new Intent(AlertSearch.this, AlertList.class);
+	        	i.putExtra("mSpinnerText", mSpinner.getSelectedItem().toString());
+	        	i.putExtra("mSearchTermText", mSearchTerm.getText().toString());
+	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
+	    		i.putExtra("mStartYear", mStartYear);
+	    		i.putExtra("mStartMonth", mStartMonth);
+	    		i.putExtra("mStartDay", mStartDay);
+	    		i.putExtra("mStartHour", mStartHour);
+	    		i.putExtra("mStartMinute", mStartMinute);
+	    		i.putExtra("mEndYear", mEndYear);
+	    		i.putExtra("mEndMonth", mEndMonth);
+	    		i.putExtra("mEndDay", mEndDay);
+	    		i.putExtra("mEndHour", mEndHour);
+	    		i.putExtra("mEndMinute", mEndMinute);
+	        	startActivityForResult(i, ACTIVITY_ALERT_LIST);
+				finish();
 			}
 		});
 		mCancelButton.setOnClickListener(new View.OnClickListener() {
