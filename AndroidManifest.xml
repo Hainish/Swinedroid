@@ -14,5 +14,6 @@
     	<activity android:name=".ServerEdit"/>
     	<activity android:name=".ServerView"/>
     	<activity android:name=".AlertSearch" android:theme="@android:style/Theme.Dialog"/>
+    	<activity android:name=".AlertList"/>
     </application>
 </manifest>
