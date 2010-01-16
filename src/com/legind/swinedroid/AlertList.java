@@ -1,7 +1,9 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.ListIterator;
 
@@ -37,7 +39,8 @@ public class AlertList extends ListActivity implements Runnable{
 	private final int XML_ERROR = 2;
 	private final int SERVER_ERROR = 3;
 	private ArrayList<HashMap<String,String>> list = new ArrayList<HashMap<String,String>>();
-	
+	private static final SimpleDateFormat yearMonthDayFormat = new SimpleDateFormat("yyyy-MM-dd");
+	private static final SimpleDateFormat hourMinuteSecondFormat = new SimpleDateFormat("HH:mm:ss");
 	
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -101,21 +104,6 @@ public class AlertList extends ListActivity implements Runnable{
 		handler.sendEmptyMessage(DOCUMENT_VALID);
 	}
 
-    private void fillData() {
-    	ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alert_list.listIterator();
-    	while(itr.hasNext()){
-    		AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
-    		HashMap<String,String> item = new HashMap<String,String>();
-    		item.put("sig_name",thisAlertListXMLElement.sig_name);
-    		item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_src % 256)));
-    		item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_dst % 256)));
-    		item.put("timestamp_date","2012-10-10");
-    		item.put("timestamp_time","10:11:10");
-    		list.add(item);	
-    	}
-		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
-    }
-
 	// Catch and display any errors sent to the handler, otherwise populate all statistics fields
 	private Handler handler = new Handler() {
 		@Override
@@ -142,5 +130,31 @@ public class AlertList extends ListActivity implements Runnable{
 
 		}
 	};
+
+	private void fillData() {
+		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alert_list.listIterator();
+		while(itr.hasNext()){
+			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
+			HashMap<String,String> item = new HashMap<String,String>();
+			switch(thisAlertListXMLElement.sig_priority){
+				case 1:
+					item.put("icon", Integer.toString(R.drawable.low));
+				break;
+				case 2:
+					item.put("icon", Integer.toString(R.drawable.warn));
+				break;
+				case 3:
+					item.put("icon", Integer.toString(R.drawable.high));
+				break;
+			}
+			item.put("sig_name",thisAlertListXMLElement.sig_name);
+			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_src % 256)));
+			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_dst % 256)));
+			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
+			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
+			list.add(item);	
+		}
+		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
+    }
 
 }

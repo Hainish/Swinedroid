@@ -23,7 +23,7 @@ public class AlertListXMLHandler extends XMLHandler{
 	private boolean in_sig_name = false;
 	private boolean in_timestamp = false;
 	public LinkedList <AlertListXMLElement> alert_list;
-	private SimpleDateFormat date_format;
+	private static SimpleDateFormat date_format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final String TAG = "AlertListXMLHandler";
 	
 	@Override
@@ -114,7 +114,6 @@ public class AlertListXMLHandler extends XMLHandler{
 	
 	@Override
 	public void createElement(Context ctx, String host, int port, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
-		date_format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		alert_list = new LinkedList<AlertListXMLElement>();
 		super.createElement(ctx, host, port, username, password, call, extra_parameters);
 	}
