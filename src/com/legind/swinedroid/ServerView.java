@@ -56,6 +56,7 @@ public class ServerView extends ListActivity implements Runnable {
 	private final int SERVER_ERROR = 3;
 	private final int ACTIVITY_SEARCH = 0;
 	private static final int REFRESH_ID = Menu.FIRST;
+    public static ListActivity LA = null;
 	static final String[] OPTIONS = new String[] {
 		"View Latest Alerts",
 	    "Search Alerts"
@@ -65,6 +66,7 @@ public class ServerView extends ListActivity implements Runnable {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		LA = this;
 		mOverviewXMLHandler = new OverviewXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();

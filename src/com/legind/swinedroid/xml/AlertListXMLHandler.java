@@ -114,7 +114,8 @@ public class AlertListXMLHandler extends XMLHandler{
 	
 	@Override
 	public void createElement(Context ctx, String host, int port, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
-		super.createElement(ctx, host, port, username, password, call, extra_parameters);
 		date_format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		alert_list = new LinkedList<AlertListXMLElement>();
+		super.createElement(ctx, host, port, username, password, call, extra_parameters);
 	}
 }
