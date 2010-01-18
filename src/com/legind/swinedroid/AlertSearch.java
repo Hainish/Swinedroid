@@ -140,9 +140,9 @@ public class AlertSearch extends Activity{
 		mSearchButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 	        	Intent i = new Intent(AlertSearch.this, AlertList.class);
+	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
 	        	i.putExtra("mSpinnerText", mSpinner.getSelectedItem().toString());
 	        	i.putExtra("mSearchTermText", mSearchTerm.getText().toString());
-	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
 	    		i.putExtra("mStartYear", mStartYear);
 	    		i.putExtra("mStartMonth", mStartMonth);
 	    		i.putExtra("mStartDay", mStartDay);

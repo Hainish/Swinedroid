@@ -55,6 +55,7 @@ public class ServerView extends ListActivity implements Runnable {
 	private final int XML_ERROR = 2;
 	private final int SERVER_ERROR = 3;
 	private final int ACTIVITY_SEARCH = 0;
+	private final int ACTIVITY_ALERT_LIST = 1;
 	private static final int REFRESH_ID = Menu.FIRST;
     public static ListActivity LA = null;
 	static final String[] OPTIONS = new String[] {
@@ -159,9 +160,17 @@ public class ServerView extends ListActivity implements Runnable {
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
+        Intent i;
         switch(position){
+        	case 0:
+	        	i = new Intent(ServerView.this, AlertList.class);
+	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
+	        	i.putExtra("mSpinnerText", "");
+	        	i.putExtra("mSearchTermText", "");
+	        	startActivityForResult(i, ACTIVITY_ALERT_LIST);
+        	break;
 	        case 1:
-	        	Intent i = new Intent(this, AlertSearch.class);
+	        	i = new Intent(this, AlertSearch.class);
 	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
 	        	startActivityForResult(i, ACTIVITY_SEARCH);
 	        break;
