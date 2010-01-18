@@ -25,6 +25,10 @@ import com.legind.swinedroid.xml.XMLHandlerException;
 
 public class AlertList extends ListActivity implements Runnable{
 	private Long mRowId;
+	private String mAlertSeverity;
+	private String mSearchTerm;
+	private String mBeginningDatetime;
+	private String mEndingDatetime;
 	private int mPortInt;
 	private String mHostText;
 	private String mUsernameText;
@@ -48,14 +52,22 @@ public class AlertList extends ListActivity implements Runnable{
 		mAlertListXMLHandler = new AlertListXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
-    	setContentView(R.layout.alert_list);
 
-		mRowId = savedInstanceState != null ? savedInstanceState
-				.getLong(ServerDbAdapter.KEY_ROWID) : null;
-		if (mRowId == null) {
+		if(savedInstanceState != null){
+			mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+			mAlertSeverity = savedInstanceState.getString("mAlertSeverity");
+			mSearchTerm = savedInstanceState.getString("mSearchTerm");
+			mBeginningDatetime = savedInstanceState.getString("mBeginningDatetime");
+			mEndingDatetime = savedInstanceState.getString("mEndingDatetime");
+		} else {
 			Bundle extras = getIntent().getExtras();
-			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
-					: null;
+			if(extras != null){
+				mRowId = extras.getLong(ServerDbAdapter.KEY_ROWID);
+				mAlertSeverity = extras.getString("mSpinnerText");
+				mSearchTerm = extras.getString("mSearchTermText");
+				mBeginningDatetime = extras.getInt("mStartYear") != 0 ? String.format("%04d", extras.getInt("mStartYear")) + "-" + String.format("%02d", extras.getInt("mStartMonth") + 1) + "-" + String.format("%02d", extras.getInt("mStartDay")) + "%20" + String.format("%02d", extras.getInt("mStartHour")) + ":" + String.format("%02d", extras.getInt("mStartMinute")) : null;
+				mEndingDatetime = extras.getInt("mEndYear") != 0 ? String.format("%04d", extras.getInt("mEndYear")) + "-" + String.format("%02d", extras.getInt("mEndMonth") + 1) + "-" + String.format("%02d", extras.getInt("mEndDay")) + "%20" + String.format("%02d", extras.getInt("mEndHour")) + ":" + String.format("%02d", extras.getInt("mEndMinute")) : null;
+			}
 		}
 
 		if (mRowId != null) {
@@ -70,8 +82,6 @@ public class AlertList extends ListActivity implements Runnable{
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
 		}
-		
-    	registerForContextMenu(getListView());
 
 		// Display the progress dialog first
 		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
@@ -83,10 +93,22 @@ public class AlertList extends ListActivity implements Runnable{
 		Thread thread = new Thread(this);
 		thread.start();
 	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+		outState.putString("mAlertSeverity", mAlertSeverity);
+		outState.putString("mSearchTerm", mSearchTerm);
+		outState.putString("mBeginningDatetime", mBeginningDatetime);
+		outState.putString("mEndingDatetime", mEndingDatetime);
+	}
     
 	public void run() {
 		try {
-			mAlertListXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", "");
+			String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "");
+			Log.w("extraargs",extraArgs);
+			mAlertListXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", extraArgs);
 		} catch (IOException e) {
 			Log.e(LOG_TAG, e.toString());
 			handler.sendEmptyMessage(IO_ERROR);
@@ -132,6 +154,7 @@ public class AlertList extends ListActivity implements Runnable{
 	};
 
 	private void fillData() {
+    	setContentView(R.layout.alert_list);
 		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alert_list.listIterator();
 		while(itr.hasNext()){
 			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
