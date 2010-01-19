@@ -101,6 +101,8 @@ public class AlertList extends ListActivity implements Runnable{
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		// save not only server row, but all the search strings
+		if(pd.isShowing())
+			pd.dismiss();
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
 		outState.putString("mAlertSeverity", mAlertSeverity);
 		outState.putString("mSearchTerm", mSearchTerm);
