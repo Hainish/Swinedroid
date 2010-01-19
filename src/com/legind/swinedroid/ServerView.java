@@ -41,6 +41,7 @@ public class ServerView extends ListActivity implements Runnable {
 	private TextView mLast24MediumText;
 	private TextView mLast24LowText;
 	private TextView mLast24TotalText;
+	private boolean mGotStatistics;
 	private Long mRowId;
 	private OverviewXMLHandler mOverviewXMLHandler;
 	private int mPortInt;
@@ -71,13 +72,11 @@ public class ServerView extends ListActivity implements Runnable {
 		mOverviewXMLHandler = new OverviewXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
+		mGotStatistics = false; 
 		
 		// Hide the title bar
         this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.server_view);
-		
-		// Display the progress dialog first
-		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
 
 		// Display all errors on the Swinedroid ListActivity
 		mEMH = new ErrorMessageHandler(Swinedroid.LA,
@@ -100,8 +99,24 @@ public class ServerView extends ListActivity implements Runnable {
 		// Display snort monitoring options
 		setListAdapter(new ArrayAdapter<String>(this, R.layout.server_view_row, OPTIONS));
 
-		mRowId = savedInstanceState != null ? savedInstanceState
-				.getLong(ServerDbAdapter.KEY_ROWID) : null;
+		if(savedInstanceState != null){
+			mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+			if(savedInstanceState.getBoolean("mGotStatistics")){
+				mGotStatistics = true;
+				mAllTimeHighText.setText(savedInstanceState.getString("mAllTimeHighText"));
+				mAllTimeMediumText.setText(savedInstanceState.getString("mAllTimeMediumText"));
+				mAllTimeLowText.setText(savedInstanceState.getString("mAllTimeLowText"));
+				mAllTimeTotalText.setText(savedInstanceState.getString("mAllTimeTotalText"));
+				mLast72HighText.setText(savedInstanceState.getString("mLast72HighText"));
+				mLast72MediumText.setText(savedInstanceState.getString("mLast72MediumText"));
+				mLast72LowText.setText(savedInstanceState.getString("mLast72LowText"));
+				mLast72TotalText.setText(savedInstanceState.getString("mLast72TotalText"));
+				mLast24HighText.setText(savedInstanceState.getString("mLast24HighText"));
+				mLast24MediumText.setText(savedInstanceState.getString("mLast24MediumText"));
+				mLast24LowText.setText(savedInstanceState.getString("mLast24LowText"));
+				mLast24TotalText.setText(savedInstanceState.getString("mLast24TotalText"));
+			}
+		}
 		if (mRowId == null) {
 			Bundle extras = getIntent().getExtras();
 			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
@@ -122,8 +137,12 @@ public class ServerView extends ListActivity implements Runnable {
 		}
 		
 		mServerViewTitleText.setText(mHostText + " Severity Statistics");
-		Thread thread = new Thread(this);
-		thread.start();
+		if(!mGotStatistics){
+			// Display the progress dialog first
+			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+			Thread thread = new Thread(this);
+			thread.start();
+		}
 	}
     
     @Override
@@ -138,6 +157,7 @@ public class ServerView extends ListActivity implements Runnable {
         switch(item.getItemId()){
         	case REFRESH_ID:
         		// Display the ProgressDialog and start thread
+        		mGotStatistics = false;
         		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         		Thread thread = new Thread(this);
         		thread.start();
@@ -149,7 +169,25 @@ public class ServerView extends ListActivity implements Runnable {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+		mDbHelper.close();
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
+		if(mGotStatistics){
+			outState.putBoolean("mGotStatistics", true);
+			outState.putString("mAllTimeHighText", mAllTimeHighText.getText().toString());
+			outState.putString("mAllTimeMediumText", mAllTimeMediumText.getText().toString());
+			outState.putString("mAllTimeLowText", mAllTimeLowText.getText().toString());
+			outState.putString("mAllTimeTotalText", mAllTimeTotalText.getText().toString());
+			outState.putString("mLast72HighText", mLast72HighText.getText().toString());
+			outState.putString("mLast72MediumText", mLast72MediumText.getText().toString());
+			outState.putString("mLast72LowText", mLast72LowText.getText().toString());
+			outState.putString("mLast72TotalText", mLast72TotalText.getText().toString());
+			outState.putString("mLast24HighText", mLast24HighText.getText().toString());
+			outState.putString("mLast24MediumText", mLast24MediumText.getText().toString());
+			outState.putString("mLast24LowText", mLast24LowText.getText().toString());
+			outState.putString("mLast24TotalText", mLast24TotalText.getText().toString());
+		} else {
+			pd.dismiss();
+		}
 	}
 
 	@Override
@@ -206,7 +244,7 @@ public class ServerView extends ListActivity implements Runnable {
 	}
 
 	// Catch and display any errors sent to the handler, otherwise populate all statistics fields
-	private Handler handler = new Handler() {
+	private volatile Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message message) {
 			pd.dismiss();
@@ -221,6 +259,7 @@ public class ServerView extends ListActivity implements Runnable {
 					mEMH.DisplayErrorMessage((String) message.obj);
 				break;
 				case DOCUMENT_VALID:
+					mGotStatistics = true;
 					DecimalFormat df = new DecimalFormat();
 					DecimalFormatSymbols dfs = new DecimalFormatSymbols();
 					dfs.setGroupingSeparator(',');
