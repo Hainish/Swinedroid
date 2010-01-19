@@ -58,6 +58,7 @@ public class AlertSearch extends Activity{
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// get rid of title, also set the layout to fill parent.  this doesn't function properly in the layout XML
         getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.alert_search);
 		getWindow().setLayout(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
@@ -78,6 +79,7 @@ public class AlertSearch extends Activity{
 	    mEndTimeText = (TextView) findViewById(R.id.endTimeText);
 	    mSearchButton = (Button) findViewById(R.id.search_button);
 	    mCancelButton = (Button) findViewById(R.id.cancel_button);
+	    // connect the spinner to the appropriate dropdown xml
 	    ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.alert_levels, android.R.layout.simple_spinner_item);
 	    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 	    mSpinner.setAdapter(adapter);
@@ -88,6 +90,7 @@ public class AlertSearch extends Activity{
 			} else {
 				mRowId = null;
 			}
+			// get some variables from the saved instance state.  make sure to update time *first*
 			mStartYear = savedInstanceState.getInt("mStartYear");
 			mStartMonth = savedInstanceState.getInt("mStartMonth");
 			mStartDay = savedInstanceState.getInt("mStartDay");
@@ -114,6 +117,8 @@ public class AlertSearch extends Activity{
 			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
 					: null;
 		}
+		
+		// set up the click listeners...
 		mStartDateText.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				showDialog(START_DATE_DIALOG_ID);
@@ -139,6 +144,7 @@ public class AlertSearch extends Activity{
 		});
 		mSearchButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
+				// send the current state of all search elements
 	        	Intent i = new Intent(AlertSearch.this, AlertList.class);
 	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
 	        	i.putExtra("mSpinnerText", mSpinner.getSelectedItem().toString());

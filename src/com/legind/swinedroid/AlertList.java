@@ -49,11 +49,13 @@ public class AlertList extends ListActivity implements Runnable{
     @Override
 	public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	// Open up the XML and db handlers
 		mAlertListXMLHandler = new AlertListXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
 
 		if(savedInstanceState != null){
+			// if we have a savedInstanceState, load the strings directly
 			mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
 			mAlertSeverity = savedInstanceState.getString("mAlertSeverity");
 			mSearchTerm = savedInstanceState.getString("mSearchTerm");
@@ -62,6 +64,7 @@ public class AlertList extends ListActivity implements Runnable{
 		} else {
 			Bundle extras = getIntent().getExtras();
 			if(extras != null){
+				// if we have an intent, construct the strings from chosen fields.  add 1 to months
 				mRowId = extras.getLong(ServerDbAdapter.KEY_ROWID);
 				mAlertSeverity = extras.getString("mSpinnerText");
 				mSearchTerm = extras.getString("mSearchTermText");
@@ -86,7 +89,7 @@ public class AlertList extends ListActivity implements Runnable{
 		// Display the progress dialog first
 		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
 
-		// Display all errors on the Swinedroid ListActivity
+		// Display all errors on the ServerView ListActivity
 		mEMH = new ErrorMessageHandler(ServerView.LA,
 				findViewById(R.id.server_edit_error_layout_root));
 		
@@ -97,6 +100,7 @@ public class AlertList extends ListActivity implements Runnable{
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+		// save not only server row, but all the search strings
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
 		outState.putString("mAlertSeverity", mAlertSeverity);
 		outState.putString("mSearchTerm", mSearchTerm);
@@ -106,6 +110,7 @@ public class AlertList extends ListActivity implements Runnable{
     
 	public void run() {
 		try {
+			// construct the GET arguments string, send it to the XML handler
 			String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "");
 			Log.w("extraargs",extraArgs);
 			mAlertListXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", extraArgs);
@@ -126,7 +131,7 @@ public class AlertList extends ListActivity implements Runnable{
 		handler.sendEmptyMessage(DOCUMENT_VALID);
 	}
 
-	// Catch and display any errors sent to the handler, otherwise populate all statistics fields
+	// Catch and display any errors sent to the handler, otherwise populate all alerts
 	private Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message message) {
@@ -155,11 +160,12 @@ public class AlertList extends ListActivity implements Runnable{
 
 	private void fillData() {
     	setContentView(R.layout.alert_list);
-		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alert_list.listIterator();
+    	// iterate through the list of alerts, preparing a set of properties, send them to the SimpleAdapter
+		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alertList.listIterator();
 		while(itr.hasNext()){
 			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
 			HashMap<String,String> item = new HashMap<String,String>();
-			switch(thisAlertListXMLElement.sig_priority){
+			switch(thisAlertListXMLElement.sigPriority){
 				case 1:
 					item.put("icon", Integer.toString(R.drawable.low));
 				break;
@@ -170,9 +176,9 @@ public class AlertList extends ListActivity implements Runnable{
 					item.put("icon", Integer.toString(R.drawable.high));
 				break;
 			}
-			item.put("sig_name",thisAlertListXMLElement.sig_name);
-			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_src % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_src % 256)));
-			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ip_dst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ip_dst % 256)));
+			item.put("sig_name",thisAlertListXMLElement.sigName);
+			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipSrc % 256)));
+			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipDst % 256)));
 			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
 			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
 			list.add(item);	
