@@ -169,7 +169,6 @@ public class ServerView extends ListActivity implements Runnable {
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		mDbHelper.close();
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
 		if(mGotStatistics){
 			outState.putBoolean("mGotStatistics", true);
