@@ -2,6 +2,8 @@ package com.legind.swinedroid;
 
 import java.util.Calendar;
 
+import com.legind.sqlite.ServerDbAdapter;
+
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;

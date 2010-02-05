@@ -1,4 +1,4 @@
-package com.legind.swinedroid;
+package com.legind.sqlite;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -8,16 +8,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-/**
- * Simple notes database access helper class. Defines the basic CRUD operations
- * for the notepad example, and gives the ability to list all notes as well as
- * retrieve or modify a specific note.
- * 
- * This has been improved from the first version of this tutorial through the
- * addition of better error handling and also using returning a Cursor instead
- * of using a collection of inner classes (which is less scalable and not
- * recommended).
- */
 public class ServerDbAdapter {
 	
 	public static final String KEY_HOST = "host";
@@ -73,7 +63,7 @@ public class ServerDbAdapter {
 	}
 	
 	/**
-	 * Open the notes database. If it cannot be opened, try to create a new
+	 * Open the server database. If it cannot be opened, try to create a new
 	 * instance of the database. If it cannot be created, throw an exception to
 	 * signal the failure
 	 * 
@@ -93,12 +83,14 @@ public class ServerDbAdapter {
 	
 	
 	/**
-	 * Create a new note using the title and body provided. If the note is
-	 * successfully created return the new rowId for that note, otherwise return
+	 * Create a new server using the host, port, username, and password provided. If the server is
+	 * successfully created return the new rowId for that server, otherwise return
 	 * a -1 to indicate failure.
 	 * 
-	 * @param title the title of the note
-	 * @param body the body of the note
+	 * @param host the hostname of the server
+	 * @param port the port for which the swinedroid server is connected
+	 * @param username the username for the swinedroid server
+	 * @param password the password for the swinedroid server
 	 * @return rowId or -1 if failed
 	 */
 	public long createServer(String host, int port, String username, String password) {
@@ -119,9 +111,9 @@ public class ServerDbAdapter {
 	}
 	
 	/**
-	 * Delete the note with the given rowId
+	 * Delete the server with the given rowId
 	 * 
-	 * @param rowId id of note to delete
+	 * @param rowId id of server to delete
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean deleteServer(long rowId) {
@@ -130,9 +122,9 @@ public class ServerDbAdapter {
 	}
 	
 	/**
-	 * Return a Cursor over the list of all notes in the database
+	 * Return a Cursor over the list of all servers in the database
 	 * 
-	 * @return Cursor over all notes
+	 * @return Cursor over all servers
 	 */
 	public Cursor fetchAllServers() {
 	
@@ -141,10 +133,10 @@ public class ServerDbAdapter {
 	}
 	
 	/**
-	 * Return a Cursor positioned at the note that matches the given rowId
+	 * Return a Cursor positioned at the server that matches the given rowId
 	 * 
-	 * @param rowId id of note to retrieve
-	 * @return Cursor positioned to matching note, if found
+	 * @param rowId id of server to retrieve
+	 * @return Cursor positioned to matching server, if found
 	 * @throws SQLException if note could not be found/retrieved
 	 */
 	public Cursor fetchServer(long rowId) throws SQLException {
@@ -166,10 +158,10 @@ public class ServerDbAdapter {
 	 * specified using the rowId, and it is altered to use the title and body
 	 * values passed in
 	 * 
-	 * @param rowId id of note to update
-	 * @param title value to set note title to
-	 * @param body value to set note body to
-	 * @return true if the note was successfully updated, false otherwise
+	 * @param rowId id of server to update
+	 * @param title value to set server title to
+	 * @param body value to set server body to
+	 * @return true if the server was successfully updated, false otherwise
 	 */
 	public boolean updateServer(long rowId, String host, int port, String username, String password) {
 	    ContentValues args = new ContentValues();

@@ -1,5 +1,7 @@
 package com.legind.swinedroid;
 
+import com.legind.sqlite.ServerDbAdapter;
+
 import android.app.ListActivity;
 import android.content.Intent;
 import android.database.Cursor;

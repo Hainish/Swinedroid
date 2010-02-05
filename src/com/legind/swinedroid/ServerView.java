@@ -23,6 +23,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler;
+import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 

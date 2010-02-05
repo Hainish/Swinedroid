@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.legind.Dialogs.ErrorMessageHandler;
+import com.legind.sqlite.ServerDbAdapter;
 
 public class ServerEdit extends Activity {
 	private ServerDbAdapter mDbHelper;

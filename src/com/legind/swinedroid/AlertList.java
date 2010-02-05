@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
@@ -16,9 +17,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.SimpleAdapter;
 
 import com.legind.Dialogs.ErrorMessageHandler;
+import com.legind.sqlite.AlertDbAdapter;
+import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
@@ -45,6 +50,8 @@ public class AlertList extends ListActivity implements Runnable{
 	private ArrayList<HashMap<String,String>> list = new ArrayList<HashMap<String,String>>();
 	private static final SimpleDateFormat yearMonthDayFormat = new SimpleDateFormat("yyyy-MM-dd");
 	private static final SimpleDateFormat hourMinuteSecondFormat = new SimpleDateFormat("HH:mm:ss");
+	private final int REFRESH_ID = 0;
+	private AlertDbAdapter mAlertDbHelper;
 	
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -149,7 +156,8 @@ public class AlertList extends ListActivity implements Runnable{
 					mEMH.DisplayErrorMessage((String) message.obj);
 				break;
 				case DOCUMENT_VALID:
-					fillData();
+					fillData(mAlertListXMLHandler.alertList);
+					
 				break;
 			}
 			if(message.what != DOCUMENT_VALID){
@@ -160,10 +168,10 @@ public class AlertList extends ListActivity implements Runnable{
 		}
 	};
 
-	private void fillData() {
+	private void fillData(LinkedList<AlertListXMLElement> alertList) {
     	setContentView(R.layout.alert_list);
     	// iterate through the list of alerts, preparing a set of properties, send them to the SimpleAdapter
-		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alertList.listIterator();
+		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
 		while(itr.hasNext()){
 			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
 			HashMap<String,String> item = new HashMap<String,String>();
@@ -186,6 +194,36 @@ public class AlertList extends ListActivity implements Runnable{
 			list.add(item);	
 		}
 		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
+		
     }
+	
+
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        menu.add(0, REFRESH_ID, 0, R.string.menu_refresh);
+        return true;
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        switch(item.getItemId()){
+        	case REFRESH_ID:
+    			HashMap<String,String> item1 = new HashMap<String,String>();
+    			item1.put("icon", Integer.toString(R.drawable.low));
+    			item1.put("sig_name","Testing 1 2 3");
+    			item1.put("ip_src","Source IP: 4.4.4.4");
+    			item1.put("ip_dst","Destination IP: 4.4.4.4");
+    			item1.put("timestamp_date","Today");
+    			item1.put("timestamp_time","Now");
+    			list.add(item1);
+    			setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
+        	break;
+        }
+        return super.onMenuItemSelected(featureId, item);
+    }
+
+
 
 }
