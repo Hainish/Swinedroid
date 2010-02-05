@@ -11,7 +11,7 @@ public class DbAdapter {
 	public static final String KEY_ROWID = "_id";
 	
 	private DatabaseHelper mDbHelper;
-	private SQLiteDatabase mDb;
+	protected SQLiteDatabase mDb;
 	
 	private static final String TAG = "DbAdapter";
 	

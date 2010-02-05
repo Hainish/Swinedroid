@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 
 public class AlertDbAdapter extends DbAdapter{
 	
@@ -15,8 +14,6 @@ public class AlertDbAdapter extends DbAdapter{
 	public static final String KEY_SIG_PRIORITY = "sig_priority";
 	public static final String KEY_SIG_NAME = "sig_priority";
 	public static final String KEY_TIMESTAMP = "timestamp";
-
-	private SQLiteDatabase mDb;
 	
 	/**
 	 * Database creation sql statement
@@ -26,7 +23,7 @@ public class AlertDbAdapter extends DbAdapter{
 	                + "sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar not null);";
 	
 	private static final String DATABASE_TABLE = "alerts";
-	private static final int DATABASE_VERSION = 0;
+	private static final int DATABASE_VERSION = 1;
 	private static final String[] FIELDS_STRING = {KEY_ROWID, KEY_SID, KEY_CID, KEY_IP_SRC, KEY_IP_DST, KEY_SIG_PRIORITY, KEY_SIG_NAME, KEY_TIMESTAMP};
 	
 	/**
@@ -45,10 +42,13 @@ public class AlertDbAdapter extends DbAdapter{
 	 * successfully created return the new rowId for that alert, otherwise return
 	 * a -1 to indicate failure.
 	 * 
-	 * @param host the hostname of the alert
-	 * @param port the port for which the swinedroid alert is connected
-	 * @param username the username for the swinedroid alert
-	 * @param password the password for the swinedroid alert
+	 * @param sid the sid of the alert
+	 * @param cid the cid of the alert
+	 * @param ipSrc the source IP of the alert
+	 * @param ipDst the destination IP of the alert
+	 * @param sigPriority the alert level
+	 * @param sigName the alert name / label
+	 * @param timestamp when the alert occurred
 	 * @return rowId or -1 if failed
 	 */
 	public long createAlert(long sid, long cid, long ipSrc, long ipDst, byte sigPriority, String sigName, Timestamp timestamp) {
@@ -62,6 +62,6 @@ public class AlertDbAdapter extends DbAdapter{
 	    initialValues.put(KEY_SIG_PRIORITY, sigPriority);
 	    initialValues.put(KEY_SIG_NAME, sigName);
 	    initialValues.put(KEY_TIMESTAMP, timestampString);
-	    return mDb.insert(DATABASE_TABLE, null, initialValues);
+	    return super.mDb.insert(DATABASE_TABLE, null, initialValues);
 	}
 }
