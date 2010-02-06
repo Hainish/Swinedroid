@@ -81,7 +81,7 @@ public class AlertList extends ListActivity implements Runnable{
 		}
 
 		if (mRowId != null) {
-			Cursor server = mDbHelper.fetchServer(mRowId);
+			Cursor server = mDbHelper.fetch(mRowId);
 			startManagingCursor(server);
 			mHostText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));

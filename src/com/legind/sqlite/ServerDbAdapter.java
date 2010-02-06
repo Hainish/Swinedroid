@@ -2,23 +2,13 @@ package com.legind.sqlite;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
-public class ServerDbAdapter {
+public class ServerDbAdapter extends DbAdapter{
 	
 	public static final String KEY_HOST = "host";
 	public static final String KEY_PORT = "port";
 	public static final String KEY_USERNAME = "username";
 	public static final String KEY_PASSWORD = "password";
-	public static final String KEY_ROWID = "_id";
-	
-	private static final String TAG = "ServerDbAdapter";
-	private DatabaseHelper mDbHelper;
-	private SQLiteDatabase mDb;
 	
 	/**
 	 * Database creation sql statement
@@ -27,30 +17,9 @@ public class ServerDbAdapter {
 	        "create table servers (_id integer primary key autoincrement, "
 	                + "host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);";
 	
-	private static final String DATABASE_NAME = "data";
 	private static final String DATABASE_TABLE = "servers";
 	private static final int DATABASE_VERSION = 3;
-	
-	private final Context mCtx;
-	
-	private static class DatabaseHelper extends SQLiteOpenHelper {
-		DatabaseHelper(Context context) {
-			super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		}
-		
-		@Override
-		public void onCreate(SQLiteDatabase db) {
-			
-			db.execSQL(DATABASE_CREATE);
-		}
-		
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS servers");
-			onCreate(db);
-		}
-	}
+	private static final String[] FIELDS_STRING = {KEY_HOST, KEY_PORT, KEY_USERNAME, KEY_PASSWORD};
 	
 	/**
 	 * Constructor - takes the context to allow the database to be
@@ -59,26 +28,7 @@ public class ServerDbAdapter {
 	 * @param ctx the Context within which to work
 	 */
 	public ServerDbAdapter(Context ctx) {
-	    this.mCtx = ctx;
-	}
-	
-	/**
-	 * Open the server database. If it cannot be opened, try to create a new
-	 * instance of the database. If it cannot be created, throw an exception to
-	 * signal the failure
-	 * 
-	 * @return this (self reference, allowing this to be chained in an
-	 *         initialization call)
-	 * @throws SQLException if the database could be neither opened or created
-	 */
-	public ServerDbAdapter open() throws SQLException {
-	    mDbHelper = new DatabaseHelper(mCtx);
-	    mDb = mDbHelper.getWritableDatabase();
-	    return this;
-	}
-	
-	public void close() {
-	    mDbHelper.close();
+		super(ctx, DATABASE_VERSION, DATABASE_CREATE, DATABASE_TABLE, FIELDS_STRING);
 	}
 	
 	
@@ -107,50 +57,7 @@ public class ServerDbAdapter {
 	    initialValues.put(KEY_PORT, port);
 	    initialValues.put(KEY_USERNAME, username);
 	    initialValues.put(KEY_PASSWORD, password);
-	    return mDb.insert(DATABASE_TABLE, null, initialValues);
-	}
-	
-	/**
-	 * Delete the server with the given rowId
-	 * 
-	 * @param rowId id of server to delete
-	 * @return true if deleted, false otherwise
-	 */
-	public boolean deleteServer(long rowId) {
-	
-	    return mDb.delete(DATABASE_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
-	}
-	
-	/**
-	 * Return a Cursor over the list of all servers in the database
-	 * 
-	 * @return Cursor over all servers
-	 */
-	public Cursor fetchAllServers() {
-	
-	    return mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID, KEY_HOST,
-	            KEY_PORT, KEY_USERNAME, KEY_PASSWORD}, null, null, null, null, null);
-	}
-	
-	/**
-	 * Return a Cursor positioned at the server that matches the given rowId
-	 * 
-	 * @param rowId id of server to retrieve
-	 * @return Cursor positioned to matching server, if found
-	 * @throws SQLException if note could not be found/retrieved
-	 */
-	public Cursor fetchServer(long rowId) throws SQLException {
-	
-	    Cursor mCursor =
-	
-	            mDb.query(true, DATABASE_TABLE, new String[] {KEY_ROWID,
-	                    KEY_HOST, KEY_PORT, KEY_USERNAME, KEY_PASSWORD}, KEY_ROWID + "=" + rowId, null,
-	                    null, null, null, null);
-	    if (mCursor != null) {
-	        mCursor.moveToFirst();
-	    }
-	    return mCursor;
-	
+	    return super.mDb.insert(DATABASE_TABLE, null, initialValues);
 	}
 	
 	/**

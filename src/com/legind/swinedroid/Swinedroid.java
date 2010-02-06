@@ -41,7 +41,7 @@ public class Swinedroid extends ListActivity {
 
     private void fillData() {
         // Get all of the rows from the database and create the item list
-    	Cursor serversCursor = mDbHelper.fetchAllServers();
+    	Cursor serversCursor = mDbHelper.fetchAll();
         startManagingCursor(serversCursor);
         
         // Create an array to specify the fields we want to display in the list (only TITLE)
@@ -86,7 +86,7 @@ public class Swinedroid extends ListActivity {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		switch(item.getItemId()) {
     	case DELETE_ID:
-	        mDbHelper.deleteServer(info.id);
+	        mDbHelper.delete(info.id);
 	        fillData();
 	        return true;
     	case EDIT_ID:

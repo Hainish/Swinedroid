@@ -24,7 +24,7 @@ public class AlertDbAdapter extends DbAdapter{
 	
 	private static final String DATABASE_TABLE = "alerts";
 	private static final int DATABASE_VERSION = 1;
-	private static final String[] FIELDS_STRING = {KEY_ROWID, KEY_SID, KEY_CID, KEY_IP_SRC, KEY_IP_DST, KEY_SIG_PRIORITY, KEY_SIG_NAME, KEY_TIMESTAMP};
+	private static final String[] FIELDS_STRING = {KEY_SID, KEY_CID, KEY_IP_SRC, KEY_IP_DST, KEY_SIG_PRIORITY, KEY_SIG_NAME, KEY_TIMESTAMP};
 	
 	/**
 	 * Constructor - takes the context to allow the database to be

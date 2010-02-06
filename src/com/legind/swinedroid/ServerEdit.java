@@ -90,7 +90,7 @@ public class ServerEdit extends Activity {
 
 	private void populateFields() {
 		if (mRowId != null) {
-			Cursor server = mDbHelper.fetchServer(mRowId);
+			Cursor server = mDbHelper.fetch(mRowId);
 			startManagingCursor(server);
 			mHostText.setText(server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST)));

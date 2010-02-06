@@ -60,7 +60,7 @@ public class DbAdapter {
 	}
 	
 	/**
-	 * Open the alert database. If it cannot be opened, try to create a new
+	 * Open the database. If it cannot be opened, try to create a new
 	 * instance of the database. If it cannot be created, throw an exception to
 	 * signal the failure
 	 * 
@@ -79,9 +79,9 @@ public class DbAdapter {
 	}
 	
 	/**
-	 * Delete the alert with the given rowId
+	 * Delete the row with the given rowId
 	 * 
-	 * @param rowId id of alert to delete
+	 * @param rowId id of row to delete
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean delete(long rowId) {
@@ -90,9 +90,8 @@ public class DbAdapter {
 	}
 	
 	/**
-	 * Delete the alert with the given rowId
+	 * Delete all rows in table
 	 * 
-	 * @param rowId id of alert to delete
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean deleteAll() {
@@ -101,28 +100,28 @@ public class DbAdapter {
 	}
 	
 	/**
-	 * Return a Cursor over the list of all alerts in the database
+	 * Return a Cursor over the list of all rows in the table
 	 * 
 	 * @return Cursor over all alerts
 	 */
 	public Cursor fetchAll() {
 		String[] fieldsWithRow = new String[FIELDS_STRING.length+1];
 		fieldsWithRow[0] = KEY_ROWID;
-		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, fieldsWithRow.length, FIELDS_STRING.length);
+		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, 1, FIELDS_STRING.length);
 	    return mDb.query(DATABASE_TABLE, fieldsWithRow, null, null, null, null, null);
 	}
 	
 	/**
-	 * Return a Cursor positioned at the alert that matches the given rowId
+	 * Return a Cursor positioned at the row that matches the given rowId
 	 * 
 	 * @param rowId id of alert to retrieve
-	 * @return Cursor positioned to matching alert, if found
-	 * @throws SQLException if note could not be found/retrieved
+	 * @return Cursor positioned to matching row, if found
+	 * @throws SQLException if row could not be found/retrieved
 	 */
 	public Cursor fetch(long rowId) throws SQLException {
 		String[] fieldsWithRow = new String[FIELDS_STRING.length+1];
 		fieldsWithRow[0] = KEY_ROWID;
-		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, fieldsWithRow.length, FIELDS_STRING.length);
+		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, 1, FIELDS_STRING.length);
 	
 	    Cursor mCursor =
 	
