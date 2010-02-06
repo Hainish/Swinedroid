@@ -10,15 +10,7 @@ public class ServerDbAdapter extends DbAdapter{
 	public static final String KEY_USERNAME = "username";
 	public static final String KEY_PASSWORD = "password";
 	
-	/**
-	 * Database creation sql statement
-	 */
-	private static final String DATABASE_CREATE =
-	        "create table servers (_id integer primary key autoincrement, "
-	                + "host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);";
-	
 	private static final String DATABASE_TABLE = "servers";
-	private static final int DATABASE_VERSION = 3;
 	private static final String[] FIELDS_STRING = {KEY_HOST, KEY_PORT, KEY_USERNAME, KEY_PASSWORD};
 	
 	/**
@@ -28,7 +20,7 @@ public class ServerDbAdapter extends DbAdapter{
 	 * @param ctx the Context within which to work
 	 */
 	public ServerDbAdapter(Context ctx) {
-		super(ctx, DATABASE_VERSION, DATABASE_CREATE, DATABASE_TABLE, FIELDS_STRING);
+		super(ctx, DATABASE_TABLE, FIELDS_STRING);
 	}
 	
 	

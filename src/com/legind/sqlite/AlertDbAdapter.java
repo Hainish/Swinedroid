@@ -12,18 +12,14 @@ public class AlertDbAdapter extends DbAdapter{
 	public static final String KEY_IP_SRC = "ip_src";
 	public static final String KEY_IP_DST = "ip_dst";
 	public static final String KEY_SIG_PRIORITY = "sig_priority";
-	public static final String KEY_SIG_NAME = "sig_priority";
+	public static final String KEY_SIG_NAME = "sig_name";
 	public static final String KEY_TIMESTAMP = "timestamp";
 	
 	/**
 	 * Database creation sql statement
 	 */
-	private static final String DATABASE_CREATE =
-	        "create table alerts (_id integer primary key autoincrement, "
-	                + "sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar not null);";
 	
 	private static final String DATABASE_TABLE = "alerts";
-	private static final int DATABASE_VERSION = 1;
 	private static final String[] FIELDS_STRING = {KEY_SID, KEY_CID, KEY_IP_SRC, KEY_IP_DST, KEY_SIG_PRIORITY, KEY_SIG_NAME, KEY_TIMESTAMP};
 	
 	/**
@@ -33,7 +29,7 @@ public class AlertDbAdapter extends DbAdapter{
 	 * @param ctx the Context within which to work
 	 */
 	public AlertDbAdapter(Context ctx) {
-		super(ctx, DATABASE_VERSION, DATABASE_CREATE, DATABASE_TABLE, FIELDS_STRING);
+		super(ctx, DATABASE_TABLE, FIELDS_STRING);
 	}
 	
 	

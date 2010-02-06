@@ -41,17 +41,18 @@ public class AlertList extends ListActivity implements Runnable{
 	private AlertListXMLHandler mAlertListXMLHandler;
 	private ProgressDialog pd;
 	private ServerDbAdapter mDbHelper;
+	private AlertDbAdapter mAlertDbHelper;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertList";
 	private ErrorMessageHandler mEMH;
 	private final int DOCUMENT_VALID = 0;
 	private final int IO_ERROR = 1;
 	private final int XML_ERROR = 2;
 	private final int SERVER_ERROR = 3;
+	private boolean mGotAlerts;
 	private ArrayList<HashMap<String,String>> list = new ArrayList<HashMap<String,String>>();
 	private static final SimpleDateFormat yearMonthDayFormat = new SimpleDateFormat("yyyy-MM-dd");
 	private static final SimpleDateFormat hourMinuteSecondFormat = new SimpleDateFormat("HH:mm:ss");
 	private final int REFRESH_ID = 0;
-	private AlertDbAdapter mAlertDbHelper;
 	
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -60,6 +61,13 @@ public class AlertList extends ListActivity implements Runnable{
 		mAlertListXMLHandler = new AlertListXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
+		mAlertDbHelper = new AlertDbAdapter(this);
+		mAlertDbHelper.open();
+		mGotAlerts = false;
+
+		// Display all errors on the ServerView ListActivity
+		mEMH = new ErrorMessageHandler(ServerView.LA,
+				findViewById(R.id.server_edit_error_layout_root));
 
 		if(savedInstanceState != null){
 			// if we have a savedInstanceState, load the strings directly
@@ -68,6 +76,7 @@ public class AlertList extends ListActivity implements Runnable{
 			mSearchTerm = savedInstanceState.getString("mSearchTerm");
 			mBeginningDatetime = savedInstanceState.getString("mBeginningDatetime");
 			mEndingDatetime = savedInstanceState.getString("mEndingDatetime");
+			mGotAlerts = savedInstanceState.getBoolean("mGotAlerts");
 		} else {
 			Bundle extras = getIntent().getExtras();
 			if(extras != null){
@@ -77,6 +86,8 @@ public class AlertList extends ListActivity implements Runnable{
 				mSearchTerm = extras.getString("mSearchTermText");
 				mBeginningDatetime = extras.getInt("mStartYear") != 0 ? String.format("%04d", extras.getInt("mStartYear")) + "-" + String.format("%02d", extras.getInt("mStartMonth") + 1) + "-" + String.format("%02d", extras.getInt("mStartDay")) + "%20" + String.format("%02d", extras.getInt("mStartHour")) + ":" + String.format("%02d", extras.getInt("mStartMinute")) : null;
 				mEndingDatetime = extras.getInt("mEndYear") != 0 ? String.format("%04d", extras.getInt("mEndYear")) + "-" + String.format("%02d", extras.getInt("mEndMonth") + 1) + "-" + String.format("%02d", extras.getInt("mEndDay")) + "%20" + String.format("%02d", extras.getInt("mEndHour")) + ":" + String.format("%02d", extras.getInt("mEndMinute")) : null;
+				// clear the alerts database
+				mAlertDbHelper.deleteAll();
 			}
 		}
 
@@ -93,15 +104,14 @@ public class AlertList extends ListActivity implements Runnable{
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
 		}
 
-		// Display the progress dialog first
-		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-
-		// Display all errors on the ServerView ListActivity
-		mEMH = new ErrorMessageHandler(ServerView.LA,
-				findViewById(R.id.server_edit_error_layout_root));
-		
-		Thread thread = new Thread(this);
-		thread.start();
+		if(!mGotAlerts){
+			// Display the progress dialog first
+			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+			Thread thread = new Thread(this);
+			thread.start();
+		} else {
+	    	setContentView(R.layout.alert_list);
+		}
 	}
 
 	@Override
@@ -115,6 +125,7 @@ public class AlertList extends ListActivity implements Runnable{
 		outState.putString("mSearchTerm", mSearchTerm);
 		outState.putString("mBeginningDatetime", mBeginningDatetime);
 		outState.putString("mEndingDatetime", mEndingDatetime);
+		outState.putBoolean("mGotAlerts", mGotAlerts);
 	}
     
 	public void run() {
@@ -156,8 +167,9 @@ public class AlertList extends ListActivity implements Runnable{
 					mEMH.DisplayErrorMessage((String) message.obj);
 				break;
 				case DOCUMENT_VALID:
+					mGotAlerts = true;
+					insertData();
 					fillData(mAlertListXMLHandler.alertList);
-					
 				break;
 			}
 			if(message.what != DOCUMENT_VALID){
@@ -194,7 +206,15 @@ public class AlertList extends ListActivity implements Runnable{
 			list.add(item);	
 		}
 		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
-		
+    }
+
+	private void insertData() {
+    	// iterate through the list of alerts, preparing a set of properties, send them to the database
+		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alertList.listIterator();
+		while(itr.hasNext()){
+			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
+			mAlertDbHelper.createAlert(thisAlertListXMLElement.sid, thisAlertListXMLElement.cid, thisAlertListXMLElement.ipSrc, thisAlertListXMLElement.ipDst, thisAlertListXMLElement.sigPriority, thisAlertListXMLElement.sigName, thisAlertListXMLElement.timestamp);
+		}
     }
 	
 

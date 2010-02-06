@@ -16,11 +16,17 @@ public class DbAdapter {
 	private static final String TAG = "DbAdapter";
 	
 	private static final String DATABASE_NAME = "data";
-	private int DATABASE_VERSION;
-	private String DATABASE_CREATE;
 	private String DATABASE_TABLE;
+	private static final int DATABASE_VERSION = 3;
 	private String[] FIELDS_STRING;
-	
+
+	/**
+	 * Database creation sql statement
+	 */
+	private static final String DATABASE_CREATE =
+		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar not null);" +
+		"create table servers (_id integer primary key autoincrement, host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);";
+
 	private final Context mCtx;
 	
 	private class DatabaseHelper extends SQLiteOpenHelper {
@@ -36,8 +42,8 @@ public class DbAdapter {
 		
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w(TAG, "Upgrading database `" + DATABASE_TABLE + "` from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE);
+			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
+			db.execSQL("DROP TABLE IF EXISTS alerts; DROP TABLE IF EXISTS servers;");
 			onCreate(db);
 		}
 	}
@@ -51,10 +57,8 @@ public class DbAdapter {
 	 * @param databaseCreate the create statement
 	 * @param databaseTable the table of the child
 	 */
-	public DbAdapter(Context ctx, int databaseVersion, String databaseCreate, String databaseTable, String[] fieldsString) {
+	public DbAdapter(Context ctx, String databaseTable, String[] fieldsString) {
 		DATABASE_TABLE = databaseTable;
-		DATABASE_CREATE = databaseCreate;
-		DATABASE_VERSION = databaseVersion;
 		FIELDS_STRING = fieldsString;
 	    this.mCtx = ctx;
 	}
@@ -85,7 +89,6 @@ public class DbAdapter {
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean delete(long rowId) {
-	
 	    return mDb.delete(DATABASE_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 	
@@ -95,7 +98,6 @@ public class DbAdapter {
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean deleteAll() {
-	
 	    return mDb.delete(DATABASE_TABLE, null, null) > 0;
 	}
 	
