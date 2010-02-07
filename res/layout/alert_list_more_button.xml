@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Button xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/btn_loadmorecontacts"
+    android:text="Load More Items"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:textAppearance="?android:attr/textAppearanceLarge" 
+    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:textColor="#FFFFFF" 
+    android:background="@android:drawable/list_selector_background" 
+    android:clickable="true" />

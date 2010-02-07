@@ -18,7 +18,10 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.SimpleAdapter;
+import android.widget.ViewSwitcher;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
@@ -51,6 +54,10 @@ public class AlertList extends ListActivity implements Runnable{
 	private static final SimpleDateFormat yearMonthDayFormat = new SimpleDateFormat("yyyy-MM-dd");
 	private static final SimpleDateFormat hourMinuteSecondFormat = new SimpleDateFormat("HH:mm:ss");
 	private final int REFRESH_ID = 0;
+	private SimpleAdapter alertListAdapter;
+	private ViewSwitcher switcher;
+	private long mNumAlertsDisplayed;
+	private long mNumAlertsTotal;
 	
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -61,7 +68,24 @@ public class AlertList extends ListActivity implements Runnable{
 		mDbHelper.open();
 		mAlertDbHelper = new AlertDbAdapter(this);
 		mAlertDbHelper.open();
+		// initial value of mGotAlerts is false
 		mGotAlerts = false;
+		mNumAlertsDisplayed = 0;
+		mNumAlertsTotal = 0;
+		
+		// create the ViewSwitcher in the current context, create the views and add them to the switcher 
+		switcher = new ViewSwitcher(this);
+		Button moreButton = (Button)View.inflate(this, R.layout.alert_list_more_button, null);
+		View progressBar = View.inflate(this, R.layout.alert_list_progress_bar, null);
+		switcher.addView(moreButton);
+		switcher.addView(progressBar);
+		
+		// set up the click listeners...
+		moreButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				switcher.showNext();
+			}
+		});
 
 		// Display all errors on the ServerView ListActivity
 		mEMH = new ErrorMessageHandler(ServerView.LA,
@@ -75,6 +99,8 @@ public class AlertList extends ListActivity implements Runnable{
 			mBeginningDatetime = savedInstanceState.getString("mBeginningDatetime");
 			mEndingDatetime = savedInstanceState.getString("mEndingDatetime");
 			mGotAlerts = savedInstanceState.getBoolean("mGotAlerts");
+			mNumAlertsDisplayed = savedInstanceState.getLong("mNumAlertsDisplayed");
+			mNumAlertsTotal = savedInstanceState.getLong("mNumAlertsTotal");
 		} else {
 			Bundle extras = getIntent().getExtras();
 			if(extras != null){
@@ -122,6 +148,8 @@ public class AlertList extends ListActivity implements Runnable{
 		outState.putString("mBeginningDatetime", mBeginningDatetime);
 		outState.putString("mEndingDatetime", mEndingDatetime);
 		outState.putBoolean("mGotAlerts", mGotAlerts);
+		outState.putLong("mNumAlertsDisplayed", mNumAlertsDisplayed);
+		outState.putLong("mNumAlertsTotal", mNumAlertsTotal);
 	}
     
 	public void run() {
@@ -165,6 +193,7 @@ public class AlertList extends ListActivity implements Runnable{
 					// clear the alerts database
 					mAlertDbHelper.deleteAll();
 					mGotAlerts = true;
+					mNumAlertsTotal = mAlertListXMLHandler.numAlerts;
 					mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
 					fillData();
 				break;
@@ -178,7 +207,6 @@ public class AlertList extends ListActivity implements Runnable{
 	};
 
 	private void fillData() {
-    	setContentView(R.layout.alert_list);
 		// get alerts from the alerts database, display them
 		Cursor alertsCursor = mAlertDbHelper.fetchAll();
 		startManagingCursor(alertsCursor);
@@ -207,7 +235,14 @@ public class AlertList extends ListActivity implements Runnable{
 				list.add(item);
 			} while(alertsCursor.moveToNext());	
 		}
-		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
+    	setContentView(R.layout.alert_list);
+    	// keep track of the number of displayed alerts
+    	mNumAlertsDisplayed = list.size();
+		//add the ViewSwitcher to the footer if there are more alerts than those displayed
+    	if(mNumAlertsTotal > mNumAlertsDisplayed)
+    		getListView().addFooterView(switcher);
+		alertListAdapter = new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text});
+		setListAdapter(alertListAdapter);
     }
 
     
@@ -230,12 +265,9 @@ public class AlertList extends ListActivity implements Runnable{
     			item1.put("timestamp_date","Today");
     			item1.put("timestamp_time","Now");
     			list.add(item1);
-    			setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
+    			alertListAdapter.notifyDataSetChanged();
         	break;
         }
         return super.onMenuItemSelected(featureId, item);
     }
-
-
-
 }
