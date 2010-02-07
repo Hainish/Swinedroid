@@ -128,7 +128,6 @@ public class AlertList extends ListActivity implements Runnable{
 		try {
 			// construct the GET arguments string, send it to the XML handler
 			String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "");
-			Log.w("extraargs",extraArgs);
 			mAlertListXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", extraArgs);
 		} catch (IOException e) {
 			Log.e(LOG_TAG, e.toString());
@@ -198,9 +197,9 @@ public class AlertList extends ListActivity implements Runnable{
 					break;
 				}
 				item.put("sig_name",alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_NAME)));
-				int ipSrc = alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC));
+				long ipSrc = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC));
 				item.put("ip_src","Source IP: " + Integer.toString((int) ((ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipSrc % 256)));
-				int ipDst = alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST));
+				long ipDst = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST));
 				item.put("ip_dst","Destination IP: " + Integer.toString((int) ((ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipDst % 256)));
 				Timestamp timestamp = Timestamp.valueOf(alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_TIMESTAMP)));
 				item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
