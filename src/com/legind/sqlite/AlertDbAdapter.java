@@ -1,9 +1,13 @@
 package com.legind.sqlite;
 
 import java.sql.Timestamp;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 import android.content.ContentValues;
 import android.content.Context;
+
+import com.legind.swinedroid.xml.AlertListXMLElement;
 
 public class AlertDbAdapter extends DbAdapter{
 	
@@ -50,7 +54,7 @@ public class AlertDbAdapter extends DbAdapter{
 	public long createAlert(long sid, long cid, long ipSrc, long ipDst, byte sigPriority, String sigName, Timestamp timestamp) {
 	    ContentValues initialValues = new ContentValues();
 	    String timestampString;
-	    timestampString = timestamp.toString();
+	    timestampString = timestamp.toString().substring(0,19);
 	    initialValues.put(KEY_SID, sid);
 	    initialValues.put(KEY_CID, cid);
 	    initialValues.put(KEY_IP_SRC, ipSrc);
@@ -60,4 +64,29 @@ public class AlertDbAdapter extends DbAdapter{
 	    initialValues.put(KEY_TIMESTAMP, timestampString);
 	    return super.mDb.insert(DATABASE_TABLE, null, initialValues);
 	}
+	
+	/**
+	 * Create new alerts from a linked list of AlertListXMLElements.  If the sql
+	 * statement is executed, return true, otherwise return false.
+	 * 
+	 * @param alertList a linked list of AlertListXMLElements
+	 * @return true if sql is executed, false otherwise
+	 */
+
+	public Boolean createAlertsFromAlertList(LinkedList<AlertListXMLElement> alertList) {
+		// if the alertList is empty, exit with -1
+		if(alertList.isEmpty())
+			return false;
+		StringBuffer insertStringBuffer = new StringBuffer("INSERT INTO alerts (sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp) ");
+		// iterate through the list of alerts, preparing a set of properties, send them to the database
+		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
+		AlertListXMLElement firstAlertListXMLElement = (AlertListXMLElement) itr.next();
+		insertStringBuffer.append("SELECT " + String.valueOf(firstAlertListXMLElement.sid) + ", " + String.valueOf(firstAlertListXMLElement.cid) + ", " + String.valueOf(firstAlertListXMLElement.ipSrc) + ", " + String.valueOf(firstAlertListXMLElement.ipDst) + ", " + String.valueOf(firstAlertListXMLElement.sigPriority) + ", \"" + firstAlertListXMLElement.sigName.replace("\"","\"\"") + "\", \"" + firstAlertListXMLElement.timestamp.toString().substring(0,19) + "\"");
+		while(itr.hasNext()){
+			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
+			insertStringBuffer.append(" UNION SELECT " + String.valueOf(thisAlertListXMLElement.sid) + ", " + String.valueOf(thisAlertListXMLElement.cid) + ", " + String.valueOf(thisAlertListXMLElement.ipSrc) + ", " + String.valueOf(thisAlertListXMLElement.ipDst) + ", " + String.valueOf(thisAlertListXMLElement.sigPriority) + ", \"" + thisAlertListXMLElement.sigName.replace("\"","\"\"") + "\", \"" + thisAlertListXMLElement.timestamp.toString().substring(0,19) + "\"");
+		}
+		super.mDb.execSQL(insertStringBuffer.toString());
+		return true;
+    }
 }

@@ -1,12 +1,11 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
 
@@ -24,7 +23,6 @@ import android.widget.SimpleAdapter;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -86,8 +84,6 @@ public class AlertList extends ListActivity implements Runnable{
 				mSearchTerm = extras.getString("mSearchTermText");
 				mBeginningDatetime = extras.getInt("mStartYear") != 0 ? String.format("%04d", extras.getInt("mStartYear")) + "-" + String.format("%02d", extras.getInt("mStartMonth") + 1) + "-" + String.format("%02d", extras.getInt("mStartDay")) + "%20" + String.format("%02d", extras.getInt("mStartHour")) + ":" + String.format("%02d", extras.getInt("mStartMinute")) : null;
 				mEndingDatetime = extras.getInt("mEndYear") != 0 ? String.format("%04d", extras.getInt("mEndYear")) + "-" + String.format("%02d", extras.getInt("mEndMonth") + 1) + "-" + String.format("%02d", extras.getInt("mEndDay")) + "%20" + String.format("%02d", extras.getInt("mEndHour")) + ":" + String.format("%02d", extras.getInt("mEndMinute")) : null;
-				// clear the alerts database
-				mAlertDbHelper.deleteAll();
 			}
 		}
 
@@ -110,7 +106,7 @@ public class AlertList extends ListActivity implements Runnable{
 			Thread thread = new Thread(this);
 			thread.start();
 		} else {
-	    	setContentView(R.layout.alert_list);
+	    	fillData();
 		}
 	}
 
@@ -118,7 +114,7 @@ public class AlertList extends ListActivity implements Runnable{
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		// save not only server row, but all the search strings
-		if(pd.isShowing())
+		if(!mGotAlerts)
 			pd.dismiss();
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
 		outState.putString("mAlertSeverity", mAlertSeverity);
@@ -167,9 +163,11 @@ public class AlertList extends ListActivity implements Runnable{
 					mEMH.DisplayErrorMessage((String) message.obj);
 				break;
 				case DOCUMENT_VALID:
+					// clear the alerts database
+					mAlertDbHelper.deleteAll();
 					mGotAlerts = true;
-					insertData();
-					fillData(mAlertListXMLHandler.alertList);
+					mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
+					fillData();
 				break;
 			}
 			if(message.what != DOCUMENT_VALID){
@@ -180,43 +178,38 @@ public class AlertList extends ListActivity implements Runnable{
 		}
 	};
 
-	private void fillData(LinkedList<AlertListXMLElement> alertList) {
+	private void fillData() {
     	setContentView(R.layout.alert_list);
-    	// iterate through the list of alerts, preparing a set of properties, send them to the SimpleAdapter
-		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
-		while(itr.hasNext()){
-			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
-			HashMap<String,String> item = new HashMap<String,String>();
-			switch(thisAlertListXMLElement.sigPriority){
-				case 1:
-					item.put("icon", Integer.toString(R.drawable.low));
-				break;
-				case 2:
-					item.put("icon", Integer.toString(R.drawable.warn));
-				break;
-				case 3:
-					item.put("icon", Integer.toString(R.drawable.high));
-				break;
-			}
-			item.put("sig_name",thisAlertListXMLElement.sigName);
-			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipSrc % 256)));
-			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipDst % 256)));
-			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
-			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
-			list.add(item);	
+		// get alerts from the alerts database, display them
+		Cursor alertsCursor = mAlertDbHelper.fetchAll();
+		startManagingCursor(alertsCursor);
+		if(alertsCursor.moveToFirst()){
+			do {
+				HashMap<String,String> item = new HashMap<String,String>();
+				switch(alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY))){
+					case 1:
+						item.put("icon", Integer.toString(R.drawable.low));
+					break;
+					case 2:
+						item.put("icon", Integer.toString(R.drawable.warn));
+					break;
+					case 3:
+						item.put("icon", Integer.toString(R.drawable.high));
+					break;
+				}
+				item.put("sig_name",alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_NAME)));
+				int ipSrc = alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC));
+				item.put("ip_src","Source IP: " + Integer.toString((int) ((ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipSrc % 256)));
+				int ipDst = alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST));
+				item.put("ip_dst","Destination IP: " + Integer.toString((int) ((ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipDst % 256)));
+				Timestamp timestamp = Timestamp.valueOf(alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_TIMESTAMP)));
+				item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
+				item.put("timestamp_time",hourMinuteSecondFormat.format((Date) timestamp));
+				list.add(item);
+			} while(alertsCursor.moveToNext());	
 		}
 		setListAdapter(new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text}));
     }
-
-	private void insertData() {
-    	// iterate through the list of alerts, preparing a set of properties, send them to the database
-		ListIterator<AlertListXMLElement> itr = mAlertListXMLHandler.alertList.listIterator();
-		while(itr.hasNext()){
-			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
-			mAlertDbHelper.createAlert(thisAlertListXMLElement.sid, thisAlertListXMLElement.cid, thisAlertListXMLElement.ipSrc, thisAlertListXMLElement.ipDst, thisAlertListXMLElement.sigPriority, thisAlertListXMLElement.sigName, thisAlertListXMLElement.timestamp);
-		}
-    }
-	
 
     
     @Override

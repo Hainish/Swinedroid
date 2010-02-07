@@ -16,16 +16,22 @@ public class DbAdapter {
 	private static final String TAG = "DbAdapter";
 	
 	private static final String DATABASE_NAME = "data";
-	private String DATABASE_TABLE;
-	private static final int DATABASE_VERSION = 3;
-	private String[] FIELDS_STRING;
+	private static final int DATABASE_VERSION = 7;
+	private String dbTable;
+	private String[] fieldsString;
 
 	/**
 	 * Database creation sql statement
 	 */
-	private static final String DATABASE_CREATE =
-		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar not null);" +
-		"create table servers (_id integer primary key autoincrement, host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);";
+	private static final String[] DATABASE_CREATE_STATEMENTS = {
+		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar(19) not null);",
+		"create table servers (_id integer primary key autoincrement, host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);"
+	};
+	
+	private static final String[] DATABASE_TABLES = {
+		"alerts",
+		"servers"
+	};
 
 	private final Context mCtx;
 	
@@ -36,14 +42,16 @@ public class DbAdapter {
 		
 		@Override
 		public void onCreate(SQLiteDatabase db) {
-			
-			db.execSQL(DATABASE_CREATE);
+			for(String dbCreateStatement : DATABASE_CREATE_STATEMENTS)
+			db.execSQL(dbCreateStatement);
 		}
 		
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS alerts; DROP TABLE IF EXISTS servers;");
+			for(String dbTableLocal : DATABASE_TABLES){
+				db.execSQL("DROP TABLE IF EXISTS " + dbTableLocal + ";");
+			}
 			onCreate(db);
 		}
 	}
@@ -57,10 +65,10 @@ public class DbAdapter {
 	 * @param databaseCreate the create statement
 	 * @param databaseTable the table of the child
 	 */
-	public DbAdapter(Context ctx, String databaseTable, String[] fieldsString) {
-		DATABASE_TABLE = databaseTable;
-		FIELDS_STRING = fieldsString;
-	    this.mCtx = ctx;
+	public DbAdapter(Context ctx, String dbTableLocal, String[] fieldsStringLocal) {
+		dbTable = dbTableLocal;
+		fieldsString = fieldsStringLocal;
+	    mCtx = ctx;
 	}
 	
 	/**
@@ -89,7 +97,7 @@ public class DbAdapter {
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean delete(long rowId) {
-	    return mDb.delete(DATABASE_TABLE, KEY_ROWID + "=" + rowId, null) > 0;
+	    return mDb.delete(dbTable, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 	
 	/**
@@ -98,7 +106,7 @@ public class DbAdapter {
 	 * @return true if deleted, false otherwise
 	 */
 	public boolean deleteAll() {
-	    return mDb.delete(DATABASE_TABLE, null, null) > 0;
+	    return mDb.delete(dbTable, null, null) > 0;
 	}
 	
 	/**
@@ -107,10 +115,10 @@ public class DbAdapter {
 	 * @return Cursor over all alerts
 	 */
 	public Cursor fetchAll() {
-		String[] fieldsWithRow = new String[FIELDS_STRING.length+1];
+		String[] fieldsWithRow = new String[fieldsString.length+1];
 		fieldsWithRow[0] = KEY_ROWID;
-		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, 1, FIELDS_STRING.length);
-	    return mDb.query(DATABASE_TABLE, fieldsWithRow, null, null, null, null, null);
+		System.arraycopy(fieldsString, 0, fieldsWithRow, 1, fieldsString.length);
+	    return mDb.query(dbTable, fieldsWithRow, null, null, null, null, null);
 	}
 	
 	/**
@@ -121,13 +129,13 @@ public class DbAdapter {
 	 * @throws SQLException if row could not be found/retrieved
 	 */
 	public Cursor fetch(long rowId) throws SQLException {
-		String[] fieldsWithRow = new String[FIELDS_STRING.length+1];
+		String[] fieldsWithRow = new String[fieldsString.length+1];
 		fieldsWithRow[0] = KEY_ROWID;
-		System.arraycopy(FIELDS_STRING, 0, fieldsWithRow, 1, FIELDS_STRING.length);
+		System.arraycopy(fieldsString, 0, fieldsWithRow, 1, fieldsString.length);
 	
 	    Cursor mCursor =
 	
-	            mDb.query(true, DATABASE_TABLE, fieldsWithRow, KEY_ROWID + "=" + rowId, null,
+	            mDb.query(true, dbTable, fieldsWithRow, KEY_ROWID + "=" + rowId, null,
 	                    null, null, null, null);
 	    if (mCursor != null) {
 	        mCursor.moveToFirst();
