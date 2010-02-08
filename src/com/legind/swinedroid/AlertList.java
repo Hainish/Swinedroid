@@ -158,8 +158,15 @@ public class AlertList extends ListActivity{
 						}
 					break;
 				}
-				if(message.what != DOCUMENT_VALID && mFromCode == ALERTS_INITIAL){
-					finish();
+				if(message.what != DOCUMENT_VALID){
+					switch(mFromCode){
+						case ALERTS_INITIAL:
+							finish();
+						break;
+						case ALERTS_ADDITIONAL:
+							switcher.showPrevious();
+						break;
+					}
 				}
 
 			}
