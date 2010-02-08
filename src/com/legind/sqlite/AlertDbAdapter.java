@@ -77,15 +77,16 @@ public class AlertDbAdapter extends DbAdapter{
 		// if the alertList is empty, exit with -1
 		if(alertList.isEmpty())
 			return false;
-		StringBuffer insertStringBuffer = new StringBuffer("INSERT INTO alerts (sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp) ");
+		StringBuffer insertStringBuffer = new StringBuffer("INSERT INTO alerts (sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp) SELECT sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp FROM (");
 		// iterate through the list of alerts, preparing a set of properties, send them to the database
 		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
 		AlertListXMLElement firstAlertListXMLElement = (AlertListXMLElement) itr.next();
-		insertStringBuffer.append("SELECT " + String.valueOf(firstAlertListXMLElement.sid) + ", " + String.valueOf(firstAlertListXMLElement.cid) + ", " + String.valueOf(firstAlertListXMLElement.ipSrc) + ", " + String.valueOf(firstAlertListXMLElement.ipDst) + ", " + String.valueOf(firstAlertListXMLElement.sigPriority) + ", \"" + firstAlertListXMLElement.sigName.replace("\"","\"\"") + "\", \"" + firstAlertListXMLElement.timestamp.toString().substring(0,19) + "\"");
+		insertStringBuffer.append("SELECT " + String.valueOf(firstAlertListXMLElement.sid) + " AS sid, " + String.valueOf(firstAlertListXMLElement.cid) + " AS cid, " + String.valueOf(firstAlertListXMLElement.ipSrc) + " AS ip_src, " + String.valueOf(firstAlertListXMLElement.ipDst) + " AS ip_dst, " + String.valueOf(firstAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + firstAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + firstAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
 		while(itr.hasNext()){
 			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
-			insertStringBuffer.append(" UNION SELECT " + String.valueOf(thisAlertListXMLElement.sid) + ", " + String.valueOf(thisAlertListXMLElement.cid) + ", " + String.valueOf(thisAlertListXMLElement.ipSrc) + ", " + String.valueOf(thisAlertListXMLElement.ipDst) + ", " + String.valueOf(thisAlertListXMLElement.sigPriority) + ", \"" + thisAlertListXMLElement.sigName.replace("\"","\"\"") + "\", \"" + thisAlertListXMLElement.timestamp.toString().substring(0,19) + "\"");
+			insertStringBuffer.append(" UNION SELECT " + String.valueOf(thisAlertListXMLElement.sid) + " AS sid, " + String.valueOf(thisAlertListXMLElement.cid) + " AS cid, " + String.valueOf(thisAlertListXMLElement.ipSrc) + " AS ip_src, " + String.valueOf(thisAlertListXMLElement.ipDst) + " AS ip_dst, " + String.valueOf(thisAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + thisAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + thisAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
 		}
+		insertStringBuffer.append(") ORDER BY sort_index ASC");
 		super.mDb.execSQL(insertStringBuffer.toString());
 		return true;
     }

@@ -35,9 +35,8 @@ public class AlertListXMLHandler extends XMLHandler{
 			inNumAlerts = true;
 		}
 		if(name.trim().equals("alert")){
-			// at the beginning of a given alert, add a new AlertListXMLElement to the alertList
 			inAlert = true;
-			alertList.addFirst(new AlertListXMLElement());
+			alertList.add(new AlertListXMLElement());
 		}
 		if(name.trim().equals("sid")){
 			inSid = true;
@@ -104,22 +103,22 @@ public class AlertListXMLHandler extends XMLHandler{
 		if(inNumAlerts)
 			numAlerts = Long.parseLong(chars);
 		if(inAlert && inSid)
-			alertList.getFirst().sid = Long.parseLong(chars);
+			alertList.getLast().sid = Long.parseLong(chars);
 		if(inAlert && inCid)
-			alertList.getFirst().cid = Long.parseLong(chars);
+			alertList.getLast().cid = Long.parseLong(chars);
 		if(inAlert && inIpSrc)
-			alertList.getFirst().ipSrc = Long.parseLong(chars);
+			alertList.getLast().ipSrc = Long.parseLong(chars);
 		if(inAlert && inIpDst)
-			alertList.getFirst().ipDst = Long.parseLong(chars);
+			alertList.getLast().ipDst = Long.parseLong(chars);
 		if(inAlert && inSigPriority)
-			alertList.getFirst().sigPriority = Byte.parseByte(chars);
+			alertList.getLast().sigPriority = Byte.parseByte(chars);
 		if(inAlert && inSigName){
-			alertList.getFirst().sigName = chars;
+			alertList.getLast().sigName = chars;
 		}
 		if(inAlert && inTimestamp){;
 			try {
 				Date parsed_date = dateFormat.parse(chars);
-				alertList.getFirst().timestamp = new Timestamp(parsed_date.getTime());
+				alertList.getLast().timestamp = new Timestamp(parsed_date.getTime());
 			} catch (ParseException e) {
 				Log.w(TAG, e.toString());
 			}

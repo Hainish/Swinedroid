@@ -6,18 +6,19 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SimpleAdapter;
@@ -26,10 +27,11 @@ import android.widget.ViewSwitcher;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
+import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
-public class AlertList extends ListActivity implements Runnable{
+public class AlertList extends ListActivity{
 	private Long mRowId;
 	private String mAlertSeverity;
 	private String mSearchTerm;
@@ -44,20 +46,126 @@ public class AlertList extends ListActivity implements Runnable{
 	private ServerDbAdapter mDbHelper;
 	private AlertDbAdapter mAlertDbHelper;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertList";
-	private ErrorMessageHandler mEMH;
-	private final int DOCUMENT_VALID = 0;
-	private final int IO_ERROR = 1;
-	private final int XML_ERROR = 2;
-	private final int SERVER_ERROR = 3;
 	private boolean mGotAlerts;
 	private ArrayList<HashMap<String,String>> list = new ArrayList<HashMap<String,String>>();
 	private static final SimpleDateFormat yearMonthDayFormat = new SimpleDateFormat("yyyy-MM-dd");
 	private static final SimpleDateFormat hourMinuteSecondFormat = new SimpleDateFormat("HH:mm:ss");
-	private final int REFRESH_ID = 0;
 	private SimpleAdapter alertListAdapter;
 	private ViewSwitcher switcher;
 	private long mNumAlertsDisplayed;
 	private long mNumAlertsTotal;
+	private final int ALERTS_INITIAL = 0;
+	private final int ALERTS_ADDITIONAL = 1;
+	AlertsDisplayRunnable additionalAlertsRunnable;
+	
+	private class AlertsDisplayRunnable implements Runnable {
+		private Context mCtx;
+		private int mFromCode;
+		private final int DOCUMENT_VALID = 0;
+		private final int IO_ERROR = 1;
+		private final int XML_ERROR = 2;
+		private final int SERVER_ERROR = 3;
+		private ErrorMessageHandler mEMH;
+
+		/**
+		 * Constructor for AlertsDisplayRunnable.  Runnable becomes context and caller-aware 
+		 * 
+		 * @param ctx the AlertList context from which it is called
+		 * @param fromCode how this runnable is called, either loading the inital alerts or additional alerts
+		 */
+		public AlertsDisplayRunnable(Context ctx, int fromCode){
+			mCtx = ctx;
+			mFromCode = fromCode;
+			// Display all errors on the ServerView ListActivity
+			Context errorMessageContext = ServerView.LA;
+			switch(mFromCode){
+				case ALERTS_ADDITIONAL:
+					// Display all errors on the AlertList ListActivity
+					errorMessageContext = mCtx;
+				break;
+			}
+			mEMH = new ErrorMessageHandler(errorMessageContext,
+					findViewById(R.id.server_edit_error_layout_root));
+		}
+		
+		/**
+		 * Send an XML request to the XML handler.  If an error occurs, send a message
+		 * to the handler with the appropriate error code
+		 */
+		public void run() {
+			try {
+				// construct the GET arguments string, send it to the XML handler
+				String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
+				mAlertListXMLHandler.createElement(mCtx, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", extraArgs);
+			} catch (IOException e) {
+				Log.e(LOG_TAG, e.toString());
+				handler.sendEmptyMessage(IO_ERROR);
+			} catch (SAXException e) {
+				Log.e(LOG_TAG, e.toString());
+				handler.sendEmptyMessage(XML_ERROR);
+			} catch (XMLHandlerException e){
+				Log.e(LOG_TAG, e.toString());
+				Message msg = Message.obtain();
+				msg.setTarget(handler);
+				msg.what = SERVER_ERROR;
+				msg.obj = e.getMessage();
+				msg.sendToTarget();
+			}
+			handler.sendEmptyMessage(DOCUMENT_VALID);
+		}
+
+		/**
+		 *  Catch and display any errors sent to the handler, otherwise populate all alerts
+		 */
+		private Handler handler = new Handler() {
+			@Override
+			public void handleMessage(Message message) {
+				/* We must dismiss the ProgressDialogue if it is the initial alerts population,
+				 * and show the previous view for the switcher for additional alerts.
+				 */
+				switch(mFromCode){
+					case ALERTS_INITIAL:
+						pd.dismiss();
+					break;
+					case ALERTS_ADDITIONAL:
+						switcher.showPrevious();
+					break;
+				}
+				switch(message.what){
+					case IO_ERROR:
+						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+					break;
+					case XML_ERROR:
+						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
+					break;
+					case SERVER_ERROR:
+						mEMH.DisplayErrorMessage((String) message.obj);
+					break;
+						case DOCUMENT_VALID:
+							switch(mFromCode){
+							case ALERTS_INITIAL:
+								// clear the alerts database
+								mAlertDbHelper.deleteAll();
+								mGotAlerts = true;
+								mNumAlertsTotal = mAlertListXMLHandler.numAlerts;
+								mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
+								fillData();
+							break;
+							case ALERTS_ADDITIONAL:
+								mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
+								fillDataFromAlertList(mAlertListXMLHandler.alertList);
+							break;
+						}
+					break;
+				}
+				if(message.what != DOCUMENT_VALID && mFromCode == ALERTS_INITIAL){
+					finish();
+				}
+
+			}
+		};
+		
+	}
 	
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -80,16 +188,17 @@ public class AlertList extends ListActivity implements Runnable{
 		switcher.addView(moreButton);
 		switcher.addView(progressBar);
 		
+		// create the runnable for expanding the alertsList
+		additionalAlertsRunnable = new AlertsDisplayRunnable(this, ALERTS_ADDITIONAL);
+		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				switcher.showNext();
+				Thread additionalAlertsThread = new Thread(additionalAlertsRunnable);
+				additionalAlertsThread.start();
 			}
 		});
-
-		// Display all errors on the ServerView ListActivity
-		mEMH = new ErrorMessageHandler(ServerView.LA,
-				findViewById(R.id.server_edit_error_layout_root));
 
 		if(savedInstanceState != null){
 			// if we have a savedInstanceState, load the strings directly
@@ -129,7 +238,7 @@ public class AlertList extends ListActivity implements Runnable{
 		if(!mGotAlerts){
 			// Display the progress dialog first
 			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-			Thread thread = new Thread(this);
+			Thread thread = new Thread(new AlertsDisplayRunnable(this, ALERTS_INITIAL));
 			thread.start();
 		} else {
 	    	fillData();
@@ -151,60 +260,6 @@ public class AlertList extends ListActivity implements Runnable{
 		outState.putLong("mNumAlertsDisplayed", mNumAlertsDisplayed);
 		outState.putLong("mNumAlertsTotal", mNumAlertsTotal);
 	}
-    
-	public void run() {
-		try {
-			// construct the GET arguments string, send it to the XML handler
-			String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "");
-			mAlertListXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "alerts", extraArgs);
-		} catch (IOException e) {
-			Log.e(LOG_TAG, e.toString());
-			handler.sendEmptyMessage(IO_ERROR);
-		} catch (SAXException e) {
-			Log.e(LOG_TAG, e.toString());
-			handler.sendEmptyMessage(XML_ERROR);
-		} catch (XMLHandlerException e){
-			Log.e(LOG_TAG, e.toString());
-			Message msg = Message.obtain();
-			msg.setTarget(handler);
-			msg.what = SERVER_ERROR;
-			msg.obj = e.getMessage();
-			msg.sendToTarget();
-		}
-		handler.sendEmptyMessage(DOCUMENT_VALID);
-	}
-
-	// Catch and display any errors sent to the handler, otherwise populate all alerts
-	private Handler handler = new Handler() {
-		@Override
-		public void handleMessage(Message message) {
-			pd.dismiss();
-			switch(message.what){
-				case IO_ERROR:
-					mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
-				break;
-				case XML_ERROR:
-					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
-				break;
-				case SERVER_ERROR:
-					mEMH.DisplayErrorMessage((String) message.obj);
-				break;
-				case DOCUMENT_VALID:
-					// clear the alerts database
-					mAlertDbHelper.deleteAll();
-					mGotAlerts = true;
-					mNumAlertsTotal = mAlertListXMLHandler.numAlerts;
-					mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
-					fillData();
-				break;
-			}
-			if(message.what != DOCUMENT_VALID){
-				mDbHelper.close();
-				finish();
-			}
-
-		}
-	};
 
 	private void fillData() {
 		// get alerts from the alerts database, display them
@@ -245,29 +300,35 @@ public class AlertList extends ListActivity implements Runnable{
 		setListAdapter(alertListAdapter);
     }
 
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        menu.add(0, REFRESH_ID, 0, R.string.menu_refresh);
-        return true;
-    }
-
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        switch(item.getItemId()){
-        	case REFRESH_ID:
-    			HashMap<String,String> item1 = new HashMap<String,String>();
-    			item1.put("icon", Integer.toString(R.drawable.low));
-    			item1.put("sig_name","Testing 1 2 3");
-    			item1.put("ip_src","Source IP: 4.4.4.4");
-    			item1.put("ip_dst","Destination IP: 4.4.4.4");
-    			item1.put("timestamp_date","Today");
-    			item1.put("timestamp_time","Now");
-    			list.add(item1);
-    			alertListAdapter.notifyDataSetChanged();
-        	break;
-        }
-        return super.onMenuItemSelected(featureId, item);
+	private void fillDataFromAlertList(LinkedList<AlertListXMLElement> alertList) {
+    	// iterate through the list of alerts, preparing a set of properties, send them to the SimpleAdapter
+		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
+		while(itr.hasNext()){
+			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
+			HashMap<String,String> item = new HashMap<String,String>();
+			switch(thisAlertListXMLElement.sigPriority){
+				case 1:
+					item.put("icon", Integer.toString(R.drawable.low));
+				break;
+				case 2:
+					item.put("icon", Integer.toString(R.drawable.warn));
+				break;
+				case 3:
+					item.put("icon", Integer.toString(R.drawable.high));
+				break;
+			}
+			item.put("sig_name",thisAlertListXMLElement.sigName);
+			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipSrc % 256)));
+			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipDst % 256)));
+			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
+			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
+			list.add(item);	
+		}
+		// keep track of the number of displayed alerts
+    	mNumAlertsDisplayed = list.size();
+		//add the ViewSwitcher to the footer if there are more alerts than those displayed
+    	if(mNumAlertsTotal <= mNumAlertsDisplayed)
+    		getListView().removeFooterView(switcher);
+    	//alertListAdapter.notifyDataSetChanged();
     }
 }
