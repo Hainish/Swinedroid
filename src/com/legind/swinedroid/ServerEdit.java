@@ -16,7 +16,7 @@ import com.legind.sqlite.ServerDbAdapter;
 public class ServerEdit extends Activity {
 	private ServerDbAdapter mDbHelper;
 	private ErrorMessageHandler mEMH;
-
+	private String mHostString;
 	private EditText mHostText;
 	private EditText mPortText;
 	private EditText mUsernameText;
@@ -30,6 +30,7 @@ public class ServerEdit extends Activity {
 		mDbHelper.open();
 		mEMH = new ErrorMessageHandler(this, findViewById(R.id.server_edit_error_layout_root));
 		setContentView(R.layout.server_edit);
+		mHostString = null;
 
 		mHostText = (EditText) findViewById(R.id.host);
 		mPortText = (EditText) findViewById(R.id.port);
@@ -45,6 +46,7 @@ public class ServerEdit extends Activity {
 				mPortText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_PORT));
 				mUsernameText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_USERNAME));
 				mPasswordText.setText(savedInstanceState.getString(ServerDbAdapter.KEY_PASSWORD));
+				mHostString = savedInstanceState.getString("mHostString");
 			} else {
 				mRowId = null;
 			}
@@ -92,14 +94,11 @@ public class ServerEdit extends Activity {
 		if (mRowId != null) {
 			Cursor server = mDbHelper.fetch(mRowId);
 			startManagingCursor(server);
-			mHostText.setText(server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST)));
-			mPortText.setText(server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT)));
-			mUsernameText.setText(server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME)));
-			mPasswordText.setText(server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD)));
+			mHostString = server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
+			mHostText.setText(mHostString);
+			mPortText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT)));
+			mUsernameText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME)));
+			mPasswordText.setText(server.getString(server.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD)));
 		}
 	}
 
@@ -113,6 +112,7 @@ public class ServerEdit extends Activity {
 			outState.putString(ServerDbAdapter.KEY_PORT, mPortText.getText().toString());
 			outState.putString(ServerDbAdapter.KEY_USERNAME, mUsernameText.getText().toString());
 			outState.putString(ServerDbAdapter.KEY_PASSWORD, mPasswordText.getText().toString());
+			outState.putString("mHostString", mHostString);
 		} else {
 			outState.putBoolean(ServerDbAdapter.KEY_ROWID + "_null", true);
 		}
@@ -130,7 +130,11 @@ public class ServerEdit extends Activity {
 				mRowId = id;
 			}
 		} else {
-			mDbHelper.updateServer(mRowId, host, port, username, password);
+			if(host.equals(mHostString)){
+				mDbHelper.updateServer(mRowId, host, port, username, password);
+			} else {
+				mDbHelper.updateServer(mRowId, host, port, username, password, null, null);
+			}
 		}
 	}
 

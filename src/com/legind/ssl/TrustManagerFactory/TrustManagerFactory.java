@@ -1,28 +1,35 @@
 package com.legind.ssl.TrustManagerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.legind.swinedroid.Swinedroid;
-
 import android.app.ListActivity;
 import android.content.Context;
 import android.util.Log;
+
+import com.legind.swinedroid.Swinedroid;
 
 public final class TrustManagerFactory {
 	private static final String LOG_TAG = "TrustManagerFactory";
 
 	private static X509TrustManager defaultTrustManager;
 	private static X509TrustManager unsecureTrustManager;
+	private static X509TrustManager customTrustManager;
 	private static X509TrustManager localTrustManager;
    
 	private static X509Certificate[] lastCertChain = null;
@@ -30,6 +37,25 @@ public final class TrustManagerFactory {
 	private static File keyStoreFile;
 	private static KeyStore keyStore;
 
+
+	public static class CustomX509TrustManager implements X509TrustManager {
+		private X509Certificate childCert;
+		
+		public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+		}
+
+		public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+			childCert = chain[0];
+		}
+
+		public X509Certificate[] getAcceptedIssuers() {
+			return null;
+		}
+		
+		public X509Certificate getChildCert(){
+			return childCert;
+		}
+	}
 
 	private static class SimpleX509TrustManager implements X509TrustManager {
 		public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -135,6 +161,7 @@ public final class TrustManagerFactory {
 			Log.e(LOG_TAG, "Key Store exception while initializing TrustManagerFactory ", e);
 		}
 		unsecureTrustManager = new SimpleX509TrustManager();
+		customTrustManager = new CustomX509TrustManager();
 	}
 
 	private TrustManagerFactory() {
@@ -142,6 +169,10 @@ public final class TrustManagerFactory {
 
 	public static X509TrustManager get(String host, boolean secure) {
 		return secure ? SecureX509TrustManager.getInstance(host) : unsecureTrustManager;
+	}
+	
+	public static X509TrustManager getCustomTrustManager(String host){
+		return customTrustManager;
 	}
 
 	public static KeyStore getKeyStore() {

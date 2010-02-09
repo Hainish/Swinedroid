@@ -8,16 +8,17 @@ import java.net.SocketAddress;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-
-import com.legind.ssl.TrustManagerFactory.TrustManagerFactory;
 
 import android.util.Log;
+
+import com.legind.ssl.TrustManagerFactory.TrustManagerFactory;
+import com.legind.ssl.TrustManagerFactory.TrustManagerFactory.CustomX509TrustManager;
 
 public class SSLHandler {
 	private String mHost;
@@ -25,32 +26,31 @@ public class SSLHandler {
 	private BufferedInputStream mIn;
 	private OutputStream mOut;
 	private SSLSocket mSocket;
+	private CustomX509TrustManager[] trustManagerArray;
+	private X509Certificate mServerCertificate;
 	
 	public SSLHandler(String host, int port){
         mHost = host;
         mPort = port;
 	}
 	
-	public void open() throws KeyManagementException, IOException{
+	public void open() throws IOException{
 		try{
 	        SocketAddress socketAddress = new InetSocketAddress(mHost, mPort);
-	        SSLContext sslContext = null;
-			sslContext = SSLContext.getInstance("TLS");
-			//TrustManagerFactory.addCertificateChain(mHost + ":" + Integer.toString(mPort), chain);
-			/* TODO: Implement secure connection with authentication - set to true below */
-	        sslContext.init(null, new TrustManager[] {
-	                TrustManagerFactory.get(mHost, false)
-	        }, new SecureRandom());
+	        SSLContext sslContext = SSLContext.getInstance("TLS");
+	        trustManagerArray = new CustomX509TrustManager[]{(CustomX509TrustManager) TrustManagerFactory.getCustomTrustManager(mHost)};
+	        sslContext.init(null, trustManagerArray, new SecureRandom());
 	        mSocket = (SSLSocket) sslContext.getSocketFactory().createSocket();
 	        mSocket.connect(socketAddress, 10000);
 	        mSocket.startHandshake();
-	        
-            // RFC 1047
+	        mServerCertificate = trustManagerArray[0].getChildCert();
+	        // RFC 1047
             mSocket.setSoTimeout(300000);
-            
             mIn = new BufferedInputStream(mSocket.getInputStream(), 1024);
             mOut = mSocket.getOutputStream();
 		} catch (NoSuchAlgorithmException e) {
+			Log.e("Swinedroid",e.toString());
+		} catch (KeyManagementException e) {
 			Log.e("Swinedroid",e.toString());
 		}
 	}
@@ -138,6 +138,10 @@ public class SSLHandler {
         } while (cont);
         return results;
 
+    }
+    
+    public X509Certificate getServerCertificate(){
+    	return mServerCertificate;
     }
     
     public BufferedInputStream getInputStream(){

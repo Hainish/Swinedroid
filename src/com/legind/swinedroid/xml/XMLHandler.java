@@ -26,6 +26,7 @@ import com.legind.web.WebTransport.WebTransportException;
 public class XMLHandler extends DefaultHandler{
 	private boolean inError = false;
 	private String errorString = null;
+	private WebTransportConnection webtransportconnection;
 	
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		if(name.trim().equals("error"))
@@ -43,14 +44,25 @@ public class XMLHandler extends DefaultHandler{
 			errorString = chars;
 	}
 	
-	public void createElement(Context ctx, String host, int port, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
-		createElement(ctx, host, port, username, password, call, "");
+	public void openWebTransportConnection(String host, int port) throws IOException{
+		try{
+			webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
+			webtransportconnection.open();
+		} catch(MalformedURLException e){
+			Log.e("Swinedroid",e.toString());
+		} catch (WebTransportException e){
+			Log.e("Swinedroid",e.toString());
+		} catch (KeyManagementException e){
+			Log.e("Swinedroid",e.toString());
+		}
 	}
 	
-	public void createElement(Context ctx, String host, int port, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Context ctx, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
+		createElement(ctx, username, password, call, "");
+	}
+	
+	public void createElement(Context ctx, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		try{
-			WebTransportConnection webtransportconnection = new WebTransport("https://" + host + ":" + Integer.toString(port) + "/").getConnection();
-			webtransportconnection.open();
 			String[] webrequest = {
 				"GET /?username=" + username + "&password=" + password + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.0",
 				"User-Agent: Swinedroid"};
@@ -65,14 +77,12 @@ public class XMLHandler extends DefaultHandler{
 			if(errorString != null){
 				 throw new XMLHandlerException(errorString);
 			}
-		} catch(MalformedURLException e){
-			Log.e("Swinedroid",e.toString());
 		} catch (ParserConfigurationException e){
 			Log.e("Swinedroid",e.toString());
-		} catch (KeyManagementException e) {
-			Log.e("Swinedroid",e.toString());
-		} catch (WebTransportException e){
-			Log.e("Swinedroid",e.toString());
 		}
+	}
+	
+	public WebTransportConnection getWebTransportConnection(){
+		return webtransportconnection;
 	}
 }

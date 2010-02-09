@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.KeyManagementException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
 import com.legind.ssl.SSLHandler.SSLHandler;
@@ -13,6 +14,7 @@ public class WebTransportConnection{
 	private SSLHandler sslhandler;
 	private ArrayList<String> lastHeaders;
 	private ArrayList<String> lastDocument;
+	private X509Certificate serverCertificate;
 	
 	public WebTransportConnection(WebTransport webtransport){
 		lastHeaders = new ArrayList<String>();
@@ -25,6 +27,7 @@ public class WebTransportConnection{
 		if(parent.getSsl()){
 			sslhandler = new SSLHandler(parent.getHost(), parent.getPort());
 			sslhandler.open();
+			serverCertificate = sslhandler.getServerCertificate();
 		} else {
 			/* TODO: Handle non-SSL connections as well */
 		}
@@ -106,6 +109,10 @@ public class WebTransportConnection{
 			/* TODO: Handle non-SSL connections as well */
 		}
 		return null;
+	}
+	
+	public X509Certificate getServerCertificate(){
+		return serverCertificate;
 	}
 	
 }

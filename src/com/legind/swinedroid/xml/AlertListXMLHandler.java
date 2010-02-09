@@ -126,8 +126,8 @@ public class AlertListXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(Context ctx, String host, int port, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Context ctx, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		alertList = new LinkedList<AlertListXMLElement>();
-		super.createElement(ctx, host, port, username, password, call, extra_parameters);
+		super.createElement(ctx, username, password, call, extra_parameters);
 	}
 }

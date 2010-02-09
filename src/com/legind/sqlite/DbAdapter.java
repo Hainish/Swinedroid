@@ -16,7 +16,7 @@ public class DbAdapter {
 	private static final String TAG = "DbAdapter";
 	
 	private static final String DATABASE_NAME = "data";
-	private static final int DATABASE_VERSION = 7;
+	private static final int DATABASE_VERSION = 8;
 	private String dbTable;
 	private String[] fieldsString;
 
@@ -25,7 +25,7 @@ public class DbAdapter {
 	 */
 	private static final String[] DATABASE_CREATE_STATEMENTS = {
 		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar(19) not null);",
-		"create table servers (_id integer primary key autoincrement, host varchar(128) not null, port int not null, username varchar(128) not null, password varchar(128) not null);"
+		"create table servers (_id integer primary key autoincrement, host varchar not null, port int not null, username varchar not null, password varchar not null, md5 varchar, sha1 varchar);"
 	};
 	
 	private static final String[] DATABASE_TABLES = {

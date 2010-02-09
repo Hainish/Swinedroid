@@ -9,9 +9,11 @@ public class ServerDbAdapter extends DbAdapter{
 	public static final String KEY_PORT = "port";
 	public static final String KEY_USERNAME = "username";
 	public static final String KEY_PASSWORD = "password";
+	public static final String KEY_MD5 = "md5";
+	public static final String KEY_SHA1 = "sha1";
 	
 	private static final String DATABASE_TABLE = "servers";
-	private static final String[] FIELDS_STRING = {KEY_HOST, KEY_PORT, KEY_USERNAME, KEY_PASSWORD};
+	private static final String[] FIELDS_STRING = {KEY_HOST, KEY_PORT, KEY_USERNAME, KEY_PASSWORD, KEY_MD5, KEY_SHA1};
 	
 	/**
 	 * Constructor - takes the context to allow the database to be
@@ -53,17 +55,47 @@ public class ServerDbAdapter extends DbAdapter{
 	}
 	
 	/**
-	 * Update the note using the details provided. The note to be updated is
-	 * specified using the rowId, and it is altered to use the title and body
-	 * values passed in
+	 * Update the server using the details provided. The server to be updated is
+	 * specified using the rowId, and it is altered to use the host, port,
+	 * username, and password values passed in
 	 * 
 	 * @param rowId id of server to update
-	 * @param title value to set server title to
-	 * @param body value to set server body to
+	 * @param host value to set server host to
+	 * @param port value to set server port to
+	 * @param username value to set server username to
+	 * @param password value to set server password to
+	 * @param md5 value to set server md5 to
+	 * @param sha1 value to set server sha1 to
+	 * @return true if the server was successfully updated, false otherwise
+	 */
+	public boolean updateServer(long rowId, String host, int port, String username, String password, String md5, String sha1) {
+	    ContentValues args = new ContentValues();
+	    args.put(KEY_MD5, md5);
+	    args.put(KEY_SHA1, sha1);
+	    return updateServerHelper(args, rowId, host, port, username, password);
+	}
+	
+	/**
+	 * Update the server using the details provided. The server to be updated is
+	 * specified using the rowId, and it is altered to use the host, port,
+	 * username, and password values passed in
+	 * 
+	 * @param rowId id of server to update
+	 * @param host value to set server host to
+	 * @param port value to set server port to
+	 * @param username value to set server username to
+	 * @param password value to set server password to
 	 * @return true if the server was successfully updated, false otherwise
 	 */
 	public boolean updateServer(long rowId, String host, int port, String username, String password) {
 	    ContentValues args = new ContentValues();
+	    return updateServerHelper(args, rowId, host, port, username, password);
+	}
+	
+	/*
+	 * Helper function for updateServer
+	 */
+	private boolean updateServerHelper(ContentValues args, long rowId, String host, int port, String username, String password){
 	    if(host.length() > 128)
 	    	host = host.substring(0,127);
 	    if(port > 65535 || port < 1)
@@ -76,7 +108,21 @@ public class ServerDbAdapter extends DbAdapter{
 	    args.put(KEY_PORT, port);
 	    args.put(KEY_USERNAME, username);
 	    args.put(KEY_PASSWORD, password);
+	    return mDb.update(DATABASE_TABLE, args, KEY_ROWID + "=" + rowId, null) > 0;
+	}
 	
+	/*
+	 * Update server md5 and sha1 hashes
+	 * 
+	 * @param rowId id of server to update
+	 * @param md5 value to set server md5 to
+	 * @param sha1 value to set server sha1 to
+	 * @return true if the server was successfully updated, false otherwise 
+	 */
+	public boolean updateSeverHashes(long rowId, String md5, String sha1){
+	    ContentValues args = new ContentValues();
+	    args.put(KEY_MD5, md5);
+	    args.put(KEY_SHA1, sha1);
 	    return mDb.update(DATABASE_TABLE, args, KEY_ROWID + "=" + rowId, null) > 0;
 	}
 }

@@ -1,6 +1,7 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
@@ -24,6 +25,7 @@ import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.ServerDbAdapter;
+import com.legind.ssl.CertificateInspect.CertificateInspect;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -49,6 +51,8 @@ public class ServerView extends ListActivity implements Runnable {
 	private String mHostText;
 	private String mUsernameText;
 	private String mPasswordText;
+	private String mMD5Text;
+	private String mSHA1Text;
 	private ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
@@ -135,6 +139,10 @@ public class ServerView extends ListActivity implements Runnable {
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
+			mMD5Text = server.getString(server
+					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
+			mSHA1Text = server.getString(server
+					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
 		}
 		
 		mServerViewTitleText.setText(mHostText + " Severity Statistics");
@@ -213,9 +221,6 @@ public class ServerView extends ListActivity implements Runnable {
 	        	startActivityForResult(i, ACTIVITY_SEARCH);
 	        break;
         }
-        //Intent i = new Intent(this, ServerView.class);
-        //i.putExtra(ServerDbAdapter.KEY_ROWID, id);
-        //startActivityForResult(i, ACTIVITY_VIEW);
     }
 
     @Override
@@ -225,7 +230,12 @@ public class ServerView extends ListActivity implements Runnable {
     
 	public void run() {
 		try {
-			mOverviewXMLHandler.createElement(this, mHostText, mPortInt, mUsernameText, mPasswordText, "overview");
+			mOverviewXMLHandler.openWebTransportConnection(mHostText, mPortInt);
+			CertificateInspect serverCertificateInspect = new CertificateInspect(mOverviewXMLHandler.getWebTransportConnection().getServerCertificate());
+			if(serverCertificateInspect.generateFingerprint("SHA1") != mSHA1Text || serverCertificateInspect.generateFingerprint("MD5") != mMD5Text){
+				/* TODO: Add certificate inspection intent here */
+			}
+			mOverviewXMLHandler.createElement(this, mUsernameText, mPasswordText, "overview");
 		} catch (IOException e) {
 			Log.e(LOG_TAG, e.toString());
 			handler.sendEmptyMessage(IO_ERROR);
