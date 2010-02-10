@@ -38,7 +38,7 @@ public class SSLHandler {
 		try{
 	        SocketAddress socketAddress = new InetSocketAddress(mHost, mPort);
 	        SSLContext sslContext = SSLContext.getInstance("TLS");
-	        trustManagerArray = new CustomX509TrustManager[]{(CustomX509TrustManager) TrustManagerFactory.getCustomTrustManager(mHost)};
+	        trustManagerArray = new CustomX509TrustManager[]{TrustManagerFactory.getCustomTrustManager(mHost)};
 	        sslContext.init(null, trustManagerArray, new SecureRandom());
 	        mSocket = (SSLSocket) sslContext.getSocketFactory().createSocket();
 	        mSocket.connect(socketAddress, 10000);

@@ -14,6 +14,7 @@ import org.xml.sax.SAXException;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +28,7 @@ import android.widget.ViewSwitcher;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
+import com.legind.ssl.CertificateInspect.CertificateInspect;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
@@ -56,7 +58,12 @@ public class AlertList extends ListActivity{
 	private long mNumAlertsTotal;
 	private final int ALERTS_INITIAL = 0;
 	private final int ALERTS_ADDITIONAL = 1;
+	private final int ACTIVITY_HASH_DIALOG_INITIAL = 0;
+	private final int ACTIVITY_HASH_DIALOG_ADDITIONAL = 1;
+	private final int CERT_REJECTED = 0;
+	private final int CERT_ACCEPTED = 1;
 	AlertsDisplayRunnable additionalAlertsRunnable;
+	AlertsDisplayRunnable initialAlertsRunnable;
 	
 	private class AlertsDisplayRunnable implements Runnable {
 		private Context mCtx;
@@ -65,6 +72,7 @@ public class AlertList extends ListActivity{
 		private final int IO_ERROR = 1;
 		private final int XML_ERROR = 2;
 		private final int SERVER_ERROR = 3;
+		private final int CERT_ERROR = 4;
 		private ErrorMessageHandler mEMH;
 
 		/**
@@ -94,12 +102,28 @@ public class AlertList extends ListActivity{
 		 */
 		public void run() {
 			try {
+				Cursor server = mDbHelper.fetch(mRowId);
+				startManagingCursor(server);
+				String mMD5 = server.getString(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
+				String mSHA1 = server.getString(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
 				mAlertListXMLHandler.openWebTransportConnection(mHostText, mPortInt);
-				/* TODO: Implement certificate checking */
-				// construct the GET arguments string, send it to the XML handler
-				String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
-				mAlertListXMLHandler.createElement(mCtx, mUsernameText, mPasswordText, "alerts", extraArgs);
-				handler.sendEmptyMessage(DOCUMENT_VALID);
+				CertificateInspect serverCertificateInspect = new CertificateInspect(mAlertListXMLHandler.getWebTransportConnection().getServerCertificate());
+				String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
+				String mServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
+				if(!mServerCertSHA1.equals(mSHA1) || !mServerCertMD5.equals(mMD5)){
+					Message msg = Message.obtain();
+					msg.setTarget(handler);
+					msg.what = CERT_ERROR;
+					msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
+					msg.sendToTarget();
+				} else {
+					// construct the GET arguments string, send it to the XML handler
+					String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
+					mAlertListXMLHandler.createElement(mCtx, mUsernameText, mPasswordText, "alerts", extraArgs);
+					handler.sendEmptyMessage(DOCUMENT_VALID);
+				}
 			} catch (IOException e) {
 				Log.e(LOG_TAG, e.toString());
 				handler.sendEmptyMessage(IO_ERROR);
@@ -143,8 +167,28 @@ public class AlertList extends ListActivity{
 					case SERVER_ERROR:
 						mEMH.DisplayErrorMessage((String) message.obj);
 					break;
-						case DOCUMENT_VALID:
-							switch(mFromCode){
+					case CERT_ERROR:
+						/*
+						 * If there is a certificate mismatch, display the ServerHashDialog activity
+						 */
+						// must set this to true, in case onPause happens for child activity
+						mGotAlerts = true;
+						Object[] messageObject = (Object[]) message.obj;
+			        	Intent i = new Intent(AlertList.this, ServerHashDialog.class);
+			        	i.putExtra("SHA1", (String) messageObject[0]);
+			        	i.putExtra("MD5", (String) messageObject[1]);
+			        	i.putExtra("CERT_INVALID", (Boolean) messageObject[2]);
+						switch(mFromCode){
+							case ALERTS_INITIAL:
+								startActivityForResult(i, ACTIVITY_HASH_DIALOG_INITIAL);
+							break;
+							case ALERTS_ADDITIONAL:
+								startActivityForResult(i, ACTIVITY_HASH_DIALOG_ADDITIONAL);
+							break;
+						}
+					break;
+					case DOCUMENT_VALID:
+						switch(mFromCode){
 							case ALERTS_INITIAL:
 								// clear the alerts database
 								mAlertDbHelper.deleteAll();
@@ -160,7 +204,7 @@ public class AlertList extends ListActivity{
 						}
 					break;
 				}
-				if(message.what != DOCUMENT_VALID){
+				if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
 					switch(mFromCode){
 						case ALERTS_INITIAL:
 							finish();
@@ -194,8 +238,9 @@ public class AlertList extends ListActivity{
 		switcher.addView(moreButton);
 		switcher.addView(progressBar);
 		
-		// create the runnable for expanding the alertsList
+		// create the runnables for creating/expanding the alertsList
 		additionalAlertsRunnable = new AlertsDisplayRunnable(this, ALERTS_ADDITIONAL);
+		initialAlertsRunnable = new AlertsDisplayRunnable(this, ALERTS_INITIAL);
 		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
@@ -244,7 +289,7 @@ public class AlertList extends ListActivity{
 		if(!mGotAlerts){
 			// Display the progress dialog first
 			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-			Thread thread = new Thread(new AlertsDisplayRunnable(this, ALERTS_INITIAL));
+			Thread thread = new Thread(initialAlertsRunnable);
 			thread.start();
 		} else {
 	    	fillData();
@@ -266,6 +311,45 @@ public class AlertList extends ListActivity{
 		outState.putLong("mNumAlertsDisplayed", mNumAlertsDisplayed);
 		outState.putLong("mNumAlertsTotal", mNumAlertsTotal);
 	}
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        switch(requestCode){
+			/*
+			 * The ServerHashDialog activity has finished.  if the cert is rejected, finish this activity.
+			 * If accepted, try connecting to the server all over again.
+			 */
+        	case ACTIVITY_HASH_DIALOG_INITIAL:
+        		switch(resultCode){
+        			case CERT_REJECTED:
+        				finish();
+        			break;
+        			case CERT_ACCEPTED:
+        				mGotAlerts = false;
+        				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+        				Bundle extras = intent.getExtras();
+        				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+        				Thread thread = new Thread(initialAlertsRunnable);
+        				thread.start();
+        			break;
+        		}
+        	break;
+        	case ACTIVITY_HASH_DIALOG_ADDITIONAL:
+        		switch(resultCode){
+	    			case CERT_REJECTED:
+	    			break;
+	    			case CERT_ACCEPTED:
+	    				Bundle extras = intent.getExtras();
+	    				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+	    				switcher.showNext();
+	    				Thread thread = new Thread(additionalAlertsRunnable);
+	    				thread.start();
+	    			break;
+        		}
+        	break;
+        }
+    }
 
 	private void fillData() {
 		// get alerts from the alerts database, display them

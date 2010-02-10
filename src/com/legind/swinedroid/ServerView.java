@@ -50,8 +50,6 @@ public class ServerView extends ListActivity implements Runnable {
 	private String mHostText;
 	private String mUsernameText;
 	private String mPasswordText;
-	private String mMD5;
-	private String mSHA1;
 	private ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
@@ -142,10 +140,6 @@ public class ServerView extends ListActivity implements Runnable {
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-			mMD5 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-			mSHA1 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
 		}
 		
 		mServerViewTitleText.setText(mHostText + " Severity Statistics");
@@ -238,9 +232,7 @@ public class ServerView extends ListActivity implements Runnable {
         				mGotStatistics = false;
         				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         				Bundle extras = intent.getExtras();
-        				mMD5 = extras.getString("MD5");
-        				mSHA1 = extras.getString("SHA1");
-        				mDbHelper.updateSeverHashes(mRowId, mMD5, mSHA1);
+        				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
         				Thread thread = new Thread(this);
         				thread.start();
         			break;
@@ -251,6 +243,12 @@ public class ServerView extends ListActivity implements Runnable {
     
 	public void run() {
 		try {
+			Cursor server = mDbHelper.fetch(mRowId);
+			startManagingCursor(server);
+			String mMD5 = server.getString(server
+					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
+			String mSHA1 = server.getString(server
+					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
 			mOverviewXMLHandler.openWebTransportConnection(mHostText, mPortInt);
 			CertificateInspect serverCertificateInspect = new CertificateInspect(mOverviewXMLHandler.getWebTransportConnection().getServerCertificate());
 			String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
@@ -297,13 +295,16 @@ public class ServerView extends ListActivity implements Runnable {
 					mEMH.DisplayErrorMessage((String) message.obj);
 				break;
 				case CERT_ERROR:
+					/*
+					 * If there is a certificate mismatch, display the ServerHashDialog activity
+					 */
 					// must set this to true, in case onPause happens for child activity
 					mGotStatistics = true;
-					Object[] hashes = (Object[]) message.obj;
+					Object[] messageObject = (Object[]) message.obj;
 		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
-		        	i.putExtra("SHA1", (String) hashes[0]);
-		        	i.putExtra("MD5", (String) hashes[1]);
-		        	i.putExtra("CERT_INVALID", (Boolean) hashes[2]);
+		        	i.putExtra("SHA1", (String) messageObject[0]);
+		        	i.putExtra("MD5", (String) messageObject[1]);
+		        	i.putExtra("CERT_INVALID", (Boolean) messageObject[2]);
 		        	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 				break;
 				case DOCUMENT_VALID:

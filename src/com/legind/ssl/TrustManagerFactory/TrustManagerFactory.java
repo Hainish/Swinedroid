@@ -1,19 +1,13 @@
 package com.legind.ssl.TrustManagerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -29,7 +23,7 @@ public final class TrustManagerFactory {
 
 	private static X509TrustManager defaultTrustManager;
 	private static X509TrustManager unsecureTrustManager;
-	private static X509TrustManager customTrustManager;
+	private static CustomX509TrustManager customTrustManager;
 	private static X509TrustManager localTrustManager;
    
 	private static X509Certificate[] lastCertChain = null;
@@ -171,7 +165,7 @@ public final class TrustManagerFactory {
 		return secure ? SecureX509TrustManager.getInstance(host) : unsecureTrustManager;
 	}
 	
-	public static X509TrustManager getCustomTrustManager(String host){
+	public static CustomX509TrustManager getCustomTrustManager(String host){
 		return customTrustManager;
 	}
 
