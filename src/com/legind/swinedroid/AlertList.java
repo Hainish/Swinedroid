@@ -412,8 +412,9 @@ public class AlertList extends ListActivity{
 			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipDst % 256)));
 			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
 			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
-			list.add(item);	
+			list.add(item);
 		}
+		alertListAdapter.notifyDataSetChanged();
 		// keep track of the number of displayed alerts
     	mNumAlertsDisplayed = list.size();
 		//add the ViewSwitcher to the footer if there are more alerts than those displayed
