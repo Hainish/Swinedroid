@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/server_hash_dialog_root"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	>
+	<ScrollView
+		android:id="@+id/server_hash_dialog_scrollview"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:padding="10dp"
+		>
+		<LinearLayout
+			android:id="@+id/server_hash_dialog_scrollinner"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			>
+			<TextView
+				android:id="@+id/server_hash_dialog_message"
+				android:layout_height="wrap_content"
+				android:layout_width="fill_parent"
+				android:layout_marginRight="5px" />
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="20px">
+				<TextView
+					android:layout_width="40px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/md5"
+					android:gravity="right" />
+				<TextView android:id="@+id/md5_hash"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="16sp"
+					android:textColor="#FFFFFF"
+					android:text="WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW" />
+			</LinearLayout>
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="20px">
+				<TextView
+					android:layout_width="40px"
+					android:layout_height="wrap_content"
+					android:layout_marginRight="5px" 
+					android:text="@string/sha1"
+					android:gravity="right" />
+				<TextView android:id="@+id/sha1_hash"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content"
+					android:textSize="16sp"
+					android:textColor="#FFFFFF"
+					android:text="WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW:WW" />
+			</LinearLayout>
+		</LinearLayout>
+	</ScrollView>
+	<LinearLayout android:orientation="horizontal"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/grey"
+		android:layout_marginTop="10dp">
+		<Button android:id="@+id/server_hash_dialog_accept" 
+			android:text="@string/accept"
+		  	android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
+		<Button android:id="@+id/server_hash_dialog_reject" 
+			android:text="@string/reject"
+			android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
+	</LinearLayout>
+</LinearLayout>

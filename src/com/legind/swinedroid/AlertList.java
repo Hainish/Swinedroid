@@ -99,6 +99,7 @@ public class AlertList extends ListActivity{
 				// construct the GET arguments string, send it to the XML handler
 				String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
 				mAlertListXMLHandler.createElement(mCtx, mUsernameText, mPasswordText, "alerts", extraArgs);
+				handler.sendEmptyMessage(DOCUMENT_VALID);
 			} catch (IOException e) {
 				Log.e(LOG_TAG, e.toString());
 				handler.sendEmptyMessage(IO_ERROR);
@@ -113,7 +114,6 @@ public class AlertList extends ListActivity{
 				msg.obj = e.getMessage();
 				msg.sendToTarget();
 			}
-			handler.sendEmptyMessage(DOCUMENT_VALID);
 		}
 
 		/**
@@ -164,9 +164,6 @@ public class AlertList extends ListActivity{
 					switch(mFromCode){
 						case ALERTS_INITIAL:
 							finish();
-						break;
-						case ALERTS_ADDITIONAL:
-							switcher.showPrevious();
 						break;
 					}
 				}

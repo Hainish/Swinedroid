@@ -24,4 +24,8 @@
     <string name="search">Search</string>
     <string name="cancel">Cancel</string>
     <string name="alert_level_prompt">Choose an alert level</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="md5">MD5</string>
+    <string name="sha1">SHA1</string>
 </resources>

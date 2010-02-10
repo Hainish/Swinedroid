@@ -1,7 +1,6 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
-import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
@@ -51,8 +50,8 @@ public class ServerView extends ListActivity implements Runnable {
 	private String mHostText;
 	private String mUsernameText;
 	private String mPasswordText;
-	private String mMD5Text;
-	private String mSHA1Text;
+	private String mMD5;
+	private String mSHA1;
 	private ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
@@ -60,8 +59,12 @@ public class ServerView extends ListActivity implements Runnable {
 	private final int IO_ERROR = 1;
 	private final int XML_ERROR = 2;
 	private final int SERVER_ERROR = 3;
+	private final int CERT_ERROR = 4;
 	private final int ACTIVITY_SEARCH = 0;
 	private final int ACTIVITY_ALERT_LIST = 1;
+	private final int ACTIVITY_HASH_DIALOG = 2;
+	private final int CERT_REJECTED = 0;
+	private final int CERT_ACCEPTED = 1;
 	private static final int REFRESH_ID = Menu.FIRST;
     public static ListActivity LA = null;
 	static final String[] OPTIONS = new String[] {
@@ -77,7 +80,7 @@ public class ServerView extends ListActivity implements Runnable {
 		mOverviewXMLHandler = new OverviewXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
-		mGotStatistics = false; 
+		mGotStatistics = false;
 		
 		// Hide the title bar
         this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
@@ -139,9 +142,9 @@ public class ServerView extends ListActivity implements Runnable {
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
 			mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-			mMD5Text = server.getString(server
+			mMD5 = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-			mSHA1Text = server.getString(server
+			mSHA1 = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
 		}
 		
@@ -197,11 +200,6 @@ public class ServerView extends ListActivity implements Runnable {
 			pd.dismiss();
 		}
 	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-	}
     
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
@@ -226,16 +224,47 @@ public class ServerView extends ListActivity implements Runnable {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
+        switch(requestCode){
+        	case ACTIVITY_HASH_DIALOG:
+        		/*
+        		 * The ServerHashDialog activity has finished.  if the cert is rejected, finish this activity.
+        		 * If accepted, try connecting to the server all over again.
+        		 */
+        		switch(resultCode){
+        			case CERT_REJECTED:
+        				finish();
+        			break;
+        			case CERT_ACCEPTED:
+        				mGotStatistics = false;
+        				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+        				Bundle extras = intent.getExtras();
+        				mMD5 = extras.getString("MD5");
+        				mSHA1 = extras.getString("SHA1");
+        				mDbHelper.updateSeverHashes(mRowId, mMD5, mSHA1);
+        				Thread thread = new Thread(this);
+        				thread.start();
+        			break;
+        		}
+        	break;
+        }
     }
     
 	public void run() {
 		try {
 			mOverviewXMLHandler.openWebTransportConnection(mHostText, mPortInt);
 			CertificateInspect serverCertificateInspect = new CertificateInspect(mOverviewXMLHandler.getWebTransportConnection().getServerCertificate());
-			if(serverCertificateInspect.generateFingerprint("SHA1") != mSHA1Text || serverCertificateInspect.generateFingerprint("MD5") != mMD5Text){
-				/* TODO: Add certificate inspection intent here */
+			String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
+			String mServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
+			if(!mServerCertSHA1.equals(mSHA1) || !mServerCertMD5.equals(mMD5)){
+				Message msg = Message.obtain();
+				msg.setTarget(handler);
+				msg.what = CERT_ERROR;
+				msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
+				msg.sendToTarget();
+			} else {
+				mOverviewXMLHandler.createElement(this, mUsernameText, mPasswordText, "overview");
+				handler.sendEmptyMessage(DOCUMENT_VALID);
 			}
-			mOverviewXMLHandler.createElement(this, mUsernameText, mPasswordText, "overview");
 		} catch (IOException e) {
 			Log.e(LOG_TAG, e.toString());
 			handler.sendEmptyMessage(IO_ERROR);
@@ -250,7 +279,6 @@ public class ServerView extends ListActivity implements Runnable {
 			msg.obj = e.getMessage();
 			msg.sendToTarget();
 		}
-		handler.sendEmptyMessage(DOCUMENT_VALID);
 	}
 
 	// Catch and display any errors sent to the handler, otherwise populate all statistics fields
@@ -267,6 +295,16 @@ public class ServerView extends ListActivity implements Runnable {
 				break;
 				case SERVER_ERROR:
 					mEMH.DisplayErrorMessage((String) message.obj);
+				break;
+				case CERT_ERROR:
+					// must set this to true, in case onPause happens for child activity
+					mGotStatistics = true;
+					Object[] hashes = (Object[]) message.obj;
+		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
+		        	i.putExtra("SHA1", (String) hashes[0]);
+		        	i.putExtra("MD5", (String) hashes[1]);
+		        	i.putExtra("CERT_INVALID", (Boolean) hashes[2]);
+		        	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 				break;
 				case DOCUMENT_VALID:
 					mGotStatistics = true;
@@ -288,7 +326,7 @@ public class ServerView extends ListActivity implements Runnable {
 					mLast24TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high + mOverviewXMLHandler.current_element.last_24_medium + mOverviewXMLHandler.current_element.last_24_low));
 				break;
 			}
-			if(message.what != DOCUMENT_VALID){
+			if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
 				mDbHelper.close();
 				finish();
 			}

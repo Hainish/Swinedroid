@@ -2,8 +2,6 @@ package com.legind.swinedroid;
 
 import java.util.Calendar;
 
-import com.legind.sqlite.ServerDbAdapter;
-
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -20,6 +18,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.LinearLayout.LayoutParams;
+
+import com.legind.sqlite.ServerDbAdapter;
 
 public class AlertSearch extends Activity{
 	private Spinner mSpinner;
@@ -62,7 +62,7 @@ public class AlertSearch extends Activity{
 		super.onCreate(savedInstanceState);
 		// get rid of title, also set the layout to fill parent.  this doesn't function properly in the layout XML
         getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-		setContentView(R.layout.alert_search);
+    	setContentView(R.layout.alert_search);
 		getWindow().setLayout(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
 
         // get the current date
