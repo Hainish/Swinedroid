@@ -7,8 +7,10 @@ import android.app.Activity;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout.LayoutParams;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.ServerDbAdapter;
@@ -26,10 +28,14 @@ public class ServerEdit extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// get rid of title, also set the layout to fill parent.  this doesn't function properly in the layout XML
+        getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+    	setContentView(R.layout.server_edit);
+		getWindow().setLayout(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
+		
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
 		mEMH = new ErrorMessageHandler(this, findViewById(R.id.server_edit_error_layout_root));
-		setContentView(R.layout.server_edit);
 		mHostString = null;
 
 		mHostText = (EditText) findViewById(R.id.host);
@@ -38,6 +44,7 @@ public class ServerEdit extends Activity {
 		mPasswordText = (EditText) findViewById(R.id.password);
 
 		Button confirmButton = (Button) findViewById(R.id.confirm);
+		Button cancelButton = (Button) findViewById(R.id.server_edit_cancel);
 
 		if(savedInstanceState != null){
 			if(!savedInstanceState.getBoolean(ServerDbAdapter.KEY_ROWID + "_null")){
@@ -87,6 +94,13 @@ public class ServerEdit extends Activity {
 				}
 			}
 
+		});
+		
+		cancelButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View view) {
+				setResult(RESULT_CANCELED);
+				finish();
+			}
 		});
 	}
 

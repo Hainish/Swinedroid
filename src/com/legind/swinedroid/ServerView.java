@@ -154,7 +154,8 @@ public class ServerView extends ListActivity implements Runnable {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, REFRESH_ID, 0, R.string.menu_refresh);
+        MenuItem refreshMenuItem = menu.add(0, REFRESH_ID, 0, R.string.menu_refresh);
+        refreshMenuItem.setIcon(R.drawable.ic_menu_refresh);
         return true;
     }
 

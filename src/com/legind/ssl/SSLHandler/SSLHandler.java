@@ -26,7 +26,7 @@ public class SSLHandler {
 	private BufferedInputStream mIn;
 	private OutputStream mOut;
 	private SSLSocket mSocket;
-	private CustomX509TrustManager[] trustManagerArray;
+	private CustomX509TrustManager trustManager;
 	private X509Certificate mServerCertificate;
 	
 	public SSLHandler(String host, int port){
@@ -38,12 +38,12 @@ public class SSLHandler {
 		try{
 	        SocketAddress socketAddress = new InetSocketAddress(mHost, mPort);
 	        SSLContext sslContext = SSLContext.getInstance("TLS");
-	        trustManagerArray = new CustomX509TrustManager[]{TrustManagerFactory.getCustomTrustManager(mHost)};
-	        sslContext.init(null, trustManagerArray, new SecureRandom());
+	        trustManager = TrustManagerFactory.getCustomTrustManager(mHost);
+	        sslContext.init(null, new CustomX509TrustManager[]{trustManager}, new SecureRandom());
 	        mSocket = (SSLSocket) sslContext.getSocketFactory().createSocket();
 	        mSocket.connect(socketAddress, 10000);
 	        mSocket.startHandshake();
-	        mServerCertificate = trustManagerArray[0].getChildCert();
+	        mServerCertificate = trustManager.getChildCert();
 	        // RFC 1047
             mSocket.setSoTimeout(300000);
             mIn = new BufferedInputStream(mSocket.getInputStream(), 1024);

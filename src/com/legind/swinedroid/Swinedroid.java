@@ -1,7 +1,5 @@
 package com.legind.swinedroid;
 
-import com.legind.sqlite.ServerDbAdapter;
-
 import android.app.ListActivity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -14,6 +12,8 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+
+import com.legind.sqlite.ServerDbAdapter;
 
 public class Swinedroid extends ListActivity {
     private static final int ACTIVITY_CREATE=0;
@@ -59,7 +59,8 @@ public class Swinedroid extends ListActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, INSERT_ID, 0, R.string.menu_insert);
+        MenuItem addMenuItem = menu.add(0, INSERT_ID, 0, R.string.menu_insert);
+        addMenuItem.setIcon(android.R.drawable.ic_menu_add);
         return true;
     }
 
@@ -113,6 +114,10 @@ public class Swinedroid extends ListActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        fillData();
+        switch(resultCode){
+        	case RESULT_OK:
+        		fillData();
+        	break;
+        }
     }
 }

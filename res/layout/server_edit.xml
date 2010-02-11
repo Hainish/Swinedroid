@@ -81,15 +81,26 @@
 					android:inputType="textPassword"
 					android:maxLength="128" />
 			</LinearLayout>
-			
-			<Button android:id="@+id/confirm" 
-			  android:text="@string/confirm"
-			  	android:layout_marginTop="5px"
-				android:layout_width="wrap_content"
-				android:layout_marginLeft="95px"
-				android:layout_height="wrap_content" />
 		</LinearLayout>
 	</ScrollView>
+	<LinearLayout android:orientation="horizontal"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/grey"
+		android:layout_marginTop="10dp">
+		<Button android:id="@+id/confirm" 
+			android:text="@string/confirm"
+		  	android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
+		<Button android:id="@+id/server_edit_cancel" 
+			android:text="@string/cancel"
+			android:layout_marginTop="5px"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1" />
+	</LinearLayout>
 
 
 </LinearLayout>
