@@ -3,7 +3,10 @@ package com.legind.swinedroid;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ListIterator;
 
+import org.achartengine.chartlib.AlertChart;
+import org.achartengine.chartlib.AlertChart.AlertMoment;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
@@ -116,6 +119,18 @@ public class ServerView extends Activity implements Runnable {
 				mLast24MediumText.setText(savedInstanceState.getString("mLast24MediumText"));
 				mLast24LowText.setText(savedInstanceState.getString("mLast24LowText"));
 				mLast24TotalText.setText(savedInstanceState.getString("mLast24TotalText"));
+				mOverviewXMLHandler.alertChart = new AlertChart();
+				for(int i = 0; savedInstanceState.containsKey("alertMomentLabel" + String.valueOf(i)); i++){
+					mOverviewXMLHandler.alertChart.addAlertMoment();
+					mOverviewXMLHandler.alertChart.setLastMomentHighAlert(savedInstanceState.getInt("alertMomentHigh" + String.valueOf(i)));
+					mOverviewXMLHandler.alertChart.setLastMomentMediumAlert(savedInstanceState.getInt("alertMomentMedium" + String.valueOf(i)));
+					mOverviewXMLHandler.alertChart.setLastMomentLowAlert(savedInstanceState.getInt("alertMomentLow" + String.valueOf(i)));
+					mOverviewXMLHandler.alertChart.setLastMomentLabel(savedInstanceState.getString("alertMomentLabel" + String.valueOf(i)));
+				}
+				alertLinearLayout.removeAllViews();
+				mOverviewXMLHandler.alertChart.setTitleString("Alerts by Date");
+				mOverviewXMLHandler.alertChart.setXAxisString("Date");
+				alertLinearLayout.addView(mOverviewXMLHandler.alertChart.execute(this));
 			}
 		}
 		if (mRowId == null) {
@@ -202,6 +217,15 @@ public class ServerView extends Activity implements Runnable {
 			outState.putString("mLast24MediumText", mLast24MediumText.getText().toString());
 			outState.putString("mLast24LowText", mLast24LowText.getText().toString());
 			outState.putString("mLast24TotalText", mLast24TotalText.getText().toString());
+			ListIterator<AlertMoment> itr = mOverviewXMLHandler.alertChart.alertMoments.listIterator();
+			while(itr.hasNext()){
+				int i = itr.nextIndex();
+				AlertMoment alertMoment = itr.next();
+				outState.putInt("alertMomentHigh" + String.valueOf(i), alertMoment.mHigh);
+				outState.putInt("alertMomentMedium" + String.valueOf(i), alertMoment.mMedium);
+				outState.putInt("alertMomentLow" + String.valueOf(i), alertMoment.mLow);
+				outState.putString("alertMomentLabel" + String.valueOf(i), alertMoment.mLabel);
+			}
 		} else {
 			pd.dismiss();
 		}

@@ -26,9 +26,9 @@ public class AlertChart extends AbstractChart {
 	private String mXAxisString;
 	private int mHighPoint;
 	private int mLowPoint;
-	private LinkedList<AlertMoment> alertMoments;
+	public LinkedList<AlertMoment> alertMoments;
 
-	private class AlertMoment{
+	public class AlertMoment{
 		public String mLabel;
 		public int mHigh;
 		public int mMedium;
