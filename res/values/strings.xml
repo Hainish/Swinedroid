@@ -28,4 +28,6 @@
     <string name="reject">Reject</string>
     <string name="md5">MD5</string>
     <string name="sha1">SHA1</string>
+    <string name="menu_search_alerts">Search Alerts</string>
+    <string name="menu_view_alerts">View Alerts</string>
 </resources>

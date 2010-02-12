@@ -212,10 +212,10 @@
 			</LinearLayout>
 		</LinearLayout>
 	</LinearLayout>
-	<ListView android:id="@+id/android:list"
+	<LinearLayout android:id="@+id/server_view_alert_linear_layout"
 		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="30dip"
+		android:layout_height="fill_parent"
+		android:layout_marginTop="5dip"
 		android:layout_marginBottom="10px"
 		android:layout_marginLeft="10px"
 		android:layout_marginRight="10px"

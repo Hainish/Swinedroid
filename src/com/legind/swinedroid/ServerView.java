@@ -6,7 +6,7 @@ import java.text.DecimalFormatSymbols;
 
 import org.xml.sax.SAXException;
 
-import android.app.ListActivity;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
@@ -16,10 +16,8 @@ import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.Window;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler;
@@ -28,7 +26,7 @@ import com.legind.ssl.CertificateInspect.CertificateInspect;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
-public class ServerView extends ListActivity implements Runnable {
+public class ServerView extends Activity implements Runnable {
 	private ServerDbAdapter mDbHelper;
 	private TextView mServerViewTitleText;
 	private TextView mAllTimeHighText;
@@ -43,6 +41,7 @@ public class ServerView extends ListActivity implements Runnable {
 	private TextView mLast24MediumText;
 	private TextView mLast24LowText;
 	private TextView mLast24TotalText;
+	private LinearLayout alertLinearLayout;
 	private boolean mGotStatistics;
 	private Long mRowId;
 	private OverviewXMLHandler mOverviewXMLHandler;
@@ -63,18 +62,16 @@ public class ServerView extends ListActivity implements Runnable {
 	private final int ACTIVITY_HASH_DIALOG = 2;
 	private final int CERT_REJECTED = 0;
 	private final int CERT_ACCEPTED = 1;
-	private static final int REFRESH_ID = Menu.FIRST;
-    public static ListActivity LA = null;
-	static final String[] OPTIONS = new String[] {
-		"View Latest Alerts",
-	    "Search Alerts"
-		};
+	private static final int REFRESH_ID = 1;
+	private static final int VIEW_ID = 2;
+	private static final int SEARCH_ID = 3;
+    public static Activity A = null;
 
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		LA = this;
+		A = this;
 		mOverviewXMLHandler = new OverviewXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
@@ -101,10 +98,8 @@ public class ServerView extends ListActivity implements Runnable {
 		mLast24MediumText = (TextView) findViewById(R.id.last_24_med);
 		mLast24LowText = (TextView) findViewById(R.id.last_24_low);
 		mLast24TotalText = (TextView) findViewById(R.id.last_24_total);
-		
-		// Display snort monitoring options
-		setListAdapter(new ArrayAdapter<String>(this, R.layout.server_view_row, OPTIONS));
-
+		alertLinearLayout = (LinearLayout) findViewById(R.id.server_view_alert_linear_layout);
+    	
 		if(savedInstanceState != null){
 			mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
 			if(savedInstanceState.getBoolean("mGotStatistics")){
@@ -155,7 +150,11 @@ public class ServerView extends ListActivity implements Runnable {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         MenuItem refreshMenuItem = menu.add(0, REFRESH_ID, 0, R.string.menu_refresh);
+        MenuItem viewMenuItem = menu.add(0, VIEW_ID, 0, R.string.menu_view_alerts);
+        MenuItem searchMenuItem = menu.add(0, SEARCH_ID, 0, R.string.menu_search_alerts);
         refreshMenuItem.setIcon(R.drawable.ic_menu_refresh);
+        viewMenuItem.setIcon(android.R.drawable.ic_menu_view);
+        searchMenuItem.setIcon(android.R.drawable.ic_menu_search);
         return true;
     }
 
@@ -169,6 +168,18 @@ public class ServerView extends ListActivity implements Runnable {
         		Thread thread = new Thread(this);
         		thread.start();
         	break;
+        	case VIEW_ID:
+	        	Intent viewIntent = new Intent(ServerView.this, AlertList.class);
+	        	viewIntent.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
+	        	viewIntent.putExtra("mSpinnerText", "");
+	        	viewIntent.putExtra("mSearchTermText", "");
+	        	startActivityForResult(viewIntent, ACTIVITY_ALERT_LIST);
+        	break;
+	        case SEARCH_ID:
+	        	Intent searchIntent = new Intent(this, AlertSearch.class);
+	        	searchIntent.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
+	        	startActivityForResult(searchIntent, ACTIVITY_SEARCH);
+	        break;
         }
         return super.onMenuItemSelected(featureId, item);
     }
@@ -195,26 +206,6 @@ public class ServerView extends ListActivity implements Runnable {
 			pd.dismiss();
 		}
 	}
-    
-    @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-        super.onListItemClick(l, v, position, id);
-        Intent i;
-        switch(position){
-        	case 0:
-	        	i = new Intent(ServerView.this, AlertList.class);
-	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
-	        	i.putExtra("mSpinnerText", "");
-	        	i.putExtra("mSearchTermText", "");
-	        	startActivityForResult(i, ACTIVITY_ALERT_LIST);
-        	break;
-	        case 1:
-	        	i = new Intent(this, AlertSearch.class);
-	        	i.putExtra(ServerDbAdapter.KEY_ROWID, mRowId);
-	        	startActivityForResult(i, ACTIVITY_SEARCH);
-	        break;
-        }
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
@@ -326,6 +317,10 @@ public class ServerView extends ListActivity implements Runnable {
 					mLast24MediumText.setText(df.format(mOverviewXMLHandler.current_element.last_24_medium));
 					mLast24LowText.setText(df.format(mOverviewXMLHandler.current_element.last_24_low));
 					mLast24TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high + mOverviewXMLHandler.current_element.last_24_medium + mOverviewXMLHandler.current_element.last_24_low));
+					alertLinearLayout.removeAllViews();
+					mOverviewXMLHandler.alertChart.setTitleString("Alerts by Date");
+					mOverviewXMLHandler.alertChart.setXAxisString("Date");
+					alertLinearLayout.addView(mOverviewXMLHandler.alertChart.execute(ServerView.A));
 				break;
 			}
 			if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){

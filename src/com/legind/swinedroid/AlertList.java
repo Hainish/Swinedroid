@@ -85,7 +85,7 @@ public class AlertList extends ListActivity{
 			mCtx = ctx;
 			mFromCode = fromCode;
 			// Display all errors on the ServerView ListActivity
-			Context errorMessageContext = ServerView.LA;
+			Context errorMessageContext = ServerView.A;
 			switch(mFromCode){
 				case ALERTS_ADDITIONAL:
 					// Display all errors on the AlertList ListActivity

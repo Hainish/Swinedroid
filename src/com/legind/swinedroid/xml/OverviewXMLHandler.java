@@ -1,6 +1,12 @@
 package com.legind.swinedroid.xml;
 
+import java.io.IOException;
+
+import org.achartengine.chartlib.AlertChart;
 import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+
+import android.content.Context;
 
 public class OverviewXMLHandler extends XMLHandler{
 	private boolean in_all_time = false;
@@ -9,11 +15,21 @@ public class OverviewXMLHandler extends XMLHandler{
 	private boolean in_high = false;
 	private boolean in_medium = false;
 	private boolean in_low = false;
+	private boolean in_graph_info = false;
+	private boolean in_label = false;
 	public OverviewXMLElement current_element = new OverviewXMLElement();
+	public AlertChart alertChart;
 	
 	@Override
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		super.startElement(uri, name, qName, atts);
+		if(name.trim().equals("graph_info")){
+			alertChart.addAlertMoment();
+			in_graph_info = true;
+		}
+		if(name.trim().equals("label")){
+			in_label = true;
+		}
 		if(name.trim().equals("all_time")){
 			in_all_time = true;
 		}
@@ -37,6 +53,12 @@ public class OverviewXMLHandler extends XMLHandler{
 	@Override
 	public void endElement(String uri, String name, String qName){
 		super.endElement(uri, name, qName);
+		if(name.trim().equals("graph_info")){
+			in_graph_info = false;
+		}
+		if(name.trim().equals("label")){
+			in_label = false;
+		}
 		if(name.trim().equals("all_time")){
 			in_all_time = false;
 		}
@@ -61,6 +83,18 @@ public class OverviewXMLHandler extends XMLHandler{
 	public void characters(char ch[], int start, int length){
 		super.characters(ch, start, length);
 		String chars = (new String(ch).substring(start, start + length));
+		if(in_graph_info && in_high){
+			alertChart.setLastMomentHighAlert(Integer.parseInt(chars));
+		}
+		if(in_graph_info && in_medium){
+			alertChart.setLastMomentMediumAlert(Integer.parseInt(chars));
+		}
+		if(in_graph_info && in_low){
+			alertChart.setLastMomentLowAlert(Integer.parseInt(chars));
+		}
+		if(in_graph_info && in_label){
+			alertChart.setLastMomentLabel(chars);
+		}
 		if(in_all_time && in_high)
 			current_element.all_time_high = Integer.parseInt(chars);
 		if(in_all_time && in_medium)
@@ -79,5 +113,11 @@ public class OverviewXMLHandler extends XMLHandler{
 			current_element.last_24_medium = Integer.parseInt(chars);
 		if(in_last_24 && in_low)
 			current_element.last_24_low = Integer.parseInt(chars);
+	}
+	
+	@Override
+	public void createElement(Context ctx, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
+		alertChart = new AlertChart();
+		super.createElement(ctx, username, password, call);
 	}
 }

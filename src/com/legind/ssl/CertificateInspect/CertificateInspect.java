@@ -1,3 +1,10 @@
+/**
+ * Copyright (C) 2010 - William Budington
+ * Licensed under GPLv3
+ * 
+ * Adapted from - The Apache Software Foundation, Copyright 2005
+ * Licensed under the Apache License, Version 2.0
+ */
 package com.legind.ssl.CertificateInspect;
 
 import java.io.ByteArrayOutputStream;
