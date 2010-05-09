@@ -46,6 +46,7 @@ public class ServerView extends Activity implements Runnable {
 	private TextView mLast24TotalText;
 	private LinearLayout alertLinearLayout;
 	private boolean mGotStatistics;
+	private boolean mPausedForCertificate;
 	private Long mRowId;
 	private OverviewXMLHandler mOverviewXMLHandler;
 	private int mPortInt;
@@ -203,7 +204,7 @@ public class ServerView extends Activity implements Runnable {
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
-		if(mGotStatistics){
+		if(mGotStatistics || mPausedForCertificate){
 			outState.putBoolean("mGotStatistics", true);
 			outState.putString("mAllTimeHighText", mAllTimeHighText.getText().toString());
 			outState.putString("mAllTimeMediumText", mAllTimeMediumText.getText().toString());
@@ -217,14 +218,16 @@ public class ServerView extends Activity implements Runnable {
 			outState.putString("mLast24MediumText", mLast24MediumText.getText().toString());
 			outState.putString("mLast24LowText", mLast24LowText.getText().toString());
 			outState.putString("mLast24TotalText", mLast24TotalText.getText().toString());
-			ListIterator<AlertMoment> itr = mOverviewXMLHandler.alertChart.alertMoments.listIterator();
-			while(itr.hasNext()){
-				int i = itr.nextIndex();
-				AlertMoment alertMoment = itr.next();
-				outState.putInt("alertMomentHigh" + String.valueOf(i), alertMoment.mHigh);
-				outState.putInt("alertMomentMedium" + String.valueOf(i), alertMoment.mMedium);
-				outState.putInt("alertMomentLow" + String.valueOf(i), alertMoment.mLow);
-				outState.putString("alertMomentLabel" + String.valueOf(i), alertMoment.mLabel);
+			if(mGotStatistics){
+				ListIterator<AlertMoment> itr = mOverviewXMLHandler.alertChart.alertMoments.listIterator();
+				while(itr.hasNext()){
+					int i = itr.nextIndex();
+					AlertMoment alertMoment = itr.next();
+					outState.putInt("alertMomentHigh" + String.valueOf(i), alertMoment.mHigh);
+					outState.putInt("alertMomentMedium" + String.valueOf(i), alertMoment.mMedium);
+					outState.putInt("alertMomentLow" + String.valueOf(i), alertMoment.mLow);
+					outState.putString("alertMomentLabel" + String.valueOf(i), alertMoment.mLabel);
+				}
 			}
 		} else {
 			pd.dismiss();
@@ -245,7 +248,7 @@ public class ServerView extends Activity implements Runnable {
         				finish();
         			break;
         			case CERT_ACCEPTED:
-        				mGotStatistics = false;
+        				mPausedForCertificate = false;
         				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         				Bundle extras = intent.getExtras();
         				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
@@ -315,7 +318,7 @@ public class ServerView extends Activity implements Runnable {
 					 * If there is a certificate mismatch, display the ServerHashDialog activity
 					 */
 					// must set this to true, in case onPause happens for child activity
-					mGotStatistics = true;
+					mPausedForCertificate = true;
 					Object[] messageObject = (Object[]) message.obj;
 		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
 		        	i.putExtra("SHA1", (String) messageObject[0]);

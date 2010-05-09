@@ -22,6 +22,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.ViewSwitcher;
 
@@ -34,6 +35,7 @@ import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
 public class AlertList extends ListActivity{
+    private static final int ACTIVITY_VIEW=0;
 	private Long mRowId;
 	private String mAlertSeverity;
 	private String mSearchTerm;
@@ -64,6 +66,12 @@ public class AlertList extends ListActivity{
 	private final int CERT_ACCEPTED = 1;
 	AlertsDisplayRunnable additionalAlertsRunnable;
 	AlertsDisplayRunnable initialAlertsRunnable;
+	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
+	
+	public class AlertListTracker extends Object {
+		public long sid;
+		public long cid;
+	}
 	
 	private class AlertsDisplayRunnable implements Runnable {
 		private Context mCtx;
@@ -74,6 +82,8 @@ public class AlertList extends ListActivity{
 		private final int SERVER_ERROR = 3;
 		private final int CERT_ERROR = 4;
 		private ErrorMessageHandler mEMH;
+		
+		
 
 		/**
 		 * Constructor for AlertsDisplayRunnable.  Runnable becomes context and caller-aware 
@@ -378,6 +388,11 @@ public class AlertList extends ListActivity{
 				item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
 				item.put("timestamp_time",hourMinuteSecondFormat.format((Date) timestamp));
 				list.add(item);
+				// Remember to add a tracker for the UIDs of this alert as well
+				AlertListTracker thisTracker = new AlertListTracker();
+				thisTracker.cid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_CID));
+				thisTracker.sid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SID));
+				AlertListTracker.add(thisTracker);
 			} while(alertsCursor.moveToNext());	
 		}
     	setContentView(R.layout.alert_list);
@@ -413,6 +428,11 @@ public class AlertList extends ListActivity{
 			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
 			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
 			list.add(item);
+			// Remember to add a tracker for the UIDs of this alert as well
+			AlertListTracker thisTracker = new AlertListTracker();
+			thisTracker.cid = thisAlertListXMLElement.cid;
+			thisTracker.sid = thisAlertListXMLElement.sid;
+			AlertListTracker.add(thisTracker);
 		}
 		alertListAdapter.notifyDataSetChanged();
 		// keep track of the number of displayed alerts
@@ -421,5 +441,16 @@ public class AlertList extends ListActivity{
     	if(mNumAlertsTotal <= mNumAlertsDisplayed)
     		getListView().removeFooterView(switcher);
     	//alertListAdapter.notifyDataSetChanged();
+    }
+	
+    @Override
+    protected void onListItemClick(ListView l, View v, int position, long id) {
+        super.onListItemClick(l, v, position, id);
+        AlertListTracker tracker = AlertListTracker.get((int)id);
+        Log.w("", Long.toString(tracker.cid) + " " + Long.toString(tracker.sid));
+        Intent i = new Intent(this, AlertView.class);
+        i.putExtra(AlertDbAdapter.KEY_CID, tracker.cid);
+        i.putExtra(AlertDbAdapter.KEY_SID, tracker.sid);
+        startActivityForResult(i, ACTIVITY_VIEW);
     }
 }
