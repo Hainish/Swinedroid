@@ -103,6 +103,12 @@ public class ServerEdit extends Activity {
 			}
 		});
 	}
+    
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		super.onDestroy();
+	}
 
 	private void populateFields() {
 		if (mRowId != null) {

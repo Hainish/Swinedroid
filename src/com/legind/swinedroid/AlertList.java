@@ -35,7 +35,6 @@ import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
 public class AlertList extends ListActivity{
-    private static final int ACTIVITY_VIEW=0;
 	private Long mRowId;
 	private String mAlertSeverity;
 	private String mSearchTerm;
@@ -62,6 +61,7 @@ public class AlertList extends ListActivity{
 	private final int ALERTS_ADDITIONAL = 1;
 	private final int ACTIVITY_HASH_DIALOG_INITIAL = 0;
 	private final int ACTIVITY_HASH_DIALOG_ADDITIONAL = 1;
+    private final int ACTIVITY_VIEW=2;
 	private final int CERT_REJECTED = 0;
 	private final int CERT_ACCEPTED = 1;
 	AlertsDisplayRunnable additionalAlertsRunnable;
@@ -304,6 +304,13 @@ public class AlertList extends ListActivity{
 		} else {
 	    	fillData();
 		}
+	}
+    
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		mAlertDbHelper.close();
+		super.onDestroy();
 	}
 
 	@Override

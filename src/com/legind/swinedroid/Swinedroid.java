@@ -38,6 +38,12 @@ public class Swinedroid extends ListActivity {
     	fillData();
     	registerForContextMenu(getListView());
 	}
+    
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		super.onDestroy();
+	}
 
     private void fillData() {
         // Get all of the rows from the database and create the item list

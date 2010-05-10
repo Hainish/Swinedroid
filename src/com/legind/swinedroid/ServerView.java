@@ -162,6 +162,12 @@ public class ServerView extends Activity implements Runnable {
 		}
 	}
     
+	@Override
+	protected void onDestroy() {
+		mDbHelper.close();
+		super.onDestroy();
+	}
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
