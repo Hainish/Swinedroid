@@ -71,6 +71,12 @@ public class AlertList extends ListActivity{
 	public class AlertListTracker extends Object {
 		public long sid;
 		public long cid;
+		public String sig_name;
+		public long ip_src;
+		public long ip_dst;
+		public String timestamp_date;
+		public String timestamp_time;
+		public byte sig_priority;
 	}
 	
 	private class AlertsDisplayRunnable implements Runnable {
@@ -375,7 +381,7 @@ public class AlertList extends ListActivity{
 		if(alertsCursor.moveToFirst()){
 			do {
 				HashMap<String,String> item = new HashMap<String,String>();
-				switch(alertsCursor.getInt(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY))){
+				switch(alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY))){
 					case 1:
 						item.put("icon", Integer.toString(R.drawable.low));
 					break;
@@ -399,6 +405,12 @@ public class AlertList extends ListActivity{
 				AlertListTracker thisTracker = new AlertListTracker();
 				thisTracker.cid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_CID));
 				thisTracker.sid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SID));
+				thisTracker.sig_name = alertsCursor.getString(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SIG_NAME));
+				thisTracker.ip_src = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_SRC));
+				thisTracker.ip_dst = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_DST));
+				thisTracker.timestamp_date = yearMonthDayFormat.format((Date) timestamp);
+				thisTracker.timestamp_time = yearMonthDayFormat.format((Date) timestamp);
+				thisTracker.sig_priority = (byte) alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY));
 				AlertListTracker.add(thisTracker);
 			} while(alertsCursor.moveToNext());	
 		}
@@ -439,6 +451,12 @@ public class AlertList extends ListActivity{
 			AlertListTracker thisTracker = new AlertListTracker();
 			thisTracker.cid = thisAlertListXMLElement.cid;
 			thisTracker.sid = thisAlertListXMLElement.sid;
+			thisTracker.sig_name = thisAlertListXMLElement.sigName;
+			thisTracker.ip_src = thisAlertListXMLElement.ipSrc;
+			thisTracker.ip_dst = thisAlertListXMLElement.ipDst;
+			thisTracker.timestamp_date = yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp);
+			thisTracker.timestamp_time = yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp);
+			thisTracker.sig_priority = thisAlertListXMLElement.sigPriority;
 			AlertListTracker.add(thisTracker);
 		}
 		alertListAdapter.notifyDataSetChanged();
@@ -458,6 +476,12 @@ public class AlertList extends ListActivity{
         Intent i = new Intent(this, AlertView.class);
         i.putExtra(AlertDbAdapter.KEY_CID, tracker.cid);
         i.putExtra(AlertDbAdapter.KEY_SID, tracker.sid);
+        i.putExtra(AlertDbAdapter.KEY_SIG_NAME, tracker.sig_name);
+        i.putExtra(AlertDbAdapter.KEY_IP_SRC, tracker.ip_src);
+        i.putExtra(AlertDbAdapter.KEY_IP_DST, tracker.ip_dst);
+        i.putExtra("date", tracker.timestamp_date);
+        i.putExtra("time", tracker.timestamp_time);
+        i.putExtra(AlertDbAdapter.KEY_SIG_PRIORITY, tracker.sig_priority);
         startActivityForResult(i, ACTIVITY_VIEW);
     }
 }

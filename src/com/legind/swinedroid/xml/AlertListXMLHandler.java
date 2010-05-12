@@ -41,9 +41,6 @@ public class AlertListXMLHandler extends XMLHandler{
 		if(name.trim().equals("sid")){
 			inSid = true;
 		}
-		if(name.trim().equals("sid")){
-			inSid = true;
-		}
 		if(name.trim().equals("cid")){
 			inCid = true;
 		}
