@@ -11,6 +11,7 @@ import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
 
+import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -67,6 +68,7 @@ public class AlertList extends ListActivity{
 	AlertsDisplayRunnable additionalAlertsRunnable;
 	AlertsDisplayRunnable initialAlertsRunnable;
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
+    public static Activity LA = null;
 	
 	public class AlertListTracker extends Object {
 		public long sid;
@@ -236,6 +238,7 @@ public class AlertList extends ListActivity{
     @Override
 	public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	LA = this;
     	// Open up the XML and db handlers
 		mAlertListXMLHandler = new AlertListXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
