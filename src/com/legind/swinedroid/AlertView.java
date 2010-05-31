@@ -9,15 +9,27 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
+import android.widget.RelativeLayout.LayoutParams;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
 import com.legind.ssl.CertificateInspect.CertificateInspect;
+import com.legind.swinedroid.ipmath.ipmath;
 import com.legind.swinedroid.xml.AlertXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -34,6 +46,14 @@ public class AlertView extends Activity{
 	private String mDate;
 	private String mTime;
 	private byte mSigPriority;
+	private int mProtocol;
+	private String mHostname;
+	private String mInterfaceName;
+	private String mPayload;
+	private int mSport;
+	private int mDport;
+	private byte mType;
+	private byte mCode;
 	private String mHostText;
 	private int mPortInt;
 	private String mUsernameText;
@@ -41,7 +61,24 @@ public class AlertView extends Activity{
 	private final String LOG_TAG = "com.legind.swinedroid.AlertView";
 	private boolean mGotAlert;
 	AlertDisplayRunnable alertRunnable;
-	private final int ACTIVITY_HASH_DIALOG = 0;
+	private static final int ACTIVITY_HASH_DIALOG = 0;
+	private static final String KEY_PROTOCOL = "protocol";
+	private static final String KEY_HOSTNAME = "hostname";
+	private static final String KEY_INTERFACE_NAME = "interface_name";
+	private static final String KEY_PAYLOAD = "payload";
+	private static final String KEY_SPORT = "sport";
+	private static final String KEY_DPORT = "dport";
+	private static final String KEY_TYPE = "type";
+	private static final String KEY_CODE = "code";
+	private static final int GENERAL_INFO_TABLE_ID = 1;
+	private static final int IP_INFO_TABLE_ID = 2;
+	private static final int PROTO_INFO_TABLE_ID = 3;
+	private static final int PAYLOAD_INFO_TABLE_ID = 4;
+	private ImageView alertIcon;
+	private TextView alertText;
+	private LayoutInflater inflater;
+	private LinearLayout layout;
+	private RelativeLayout relativeLayout;
 	
 	private class AlertDisplayRunnable implements Runnable {
 		private Context mCtx;
@@ -143,7 +180,15 @@ public class AlertView extends Activity{
 					break;
 					case DOCUMENT_VALID:
 						mGotAlert = true;
-						//fillData();
+						mProtocol = mAlertXMLHandler.alert.protocol;
+						mHostname = mAlertXMLHandler.alert.hostname;
+						mInterfaceName = mAlertXMLHandler.alert.interface_name;
+						mPayload = mAlertXMLHandler.alert.payload;
+						mSport = mAlertXMLHandler.alert.sport;
+						mDport = mAlertXMLHandler.alert.dport;
+						mType = mAlertXMLHandler.alert.type;
+						mCode = mAlertXMLHandler.alert.code;
+						fillData();
 					break;
 				}
 				if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
@@ -162,12 +207,19 @@ public class AlertView extends Activity{
 		mAlertXMLHandler = new AlertXMLHandler();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
-		setContentView(R.layout.alert_view);
+		inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		layout = (LinearLayout) inflater.inflate(R.layout.alert_view, (ViewGroup) findViewById(R.id.alert_view_layout_root));
+		relativeLayout = (RelativeLayout) layout.findViewById(R.id.alert_view_relative_layout);
+		setContentView(layout);
+		
 		// initial value of mGotAlert is false
 		mGotAlert = false;
 		
 		// create the runnables
 		alertRunnable = new AlertDisplayRunnable();
+
+		alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
+		alertText = (TextView) layout.findViewById(R.id.alert_view_sig_name_text);
 
 		if(savedInstanceState != null){
 			// if we have a savedInstanceState, load the strings directly
@@ -180,6 +232,14 @@ public class AlertView extends Activity{
 	        mDate = savedInstanceState.getString("date");
 	        mTime = savedInstanceState.getString("time");
 			mSigPriority = savedInstanceState.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
+			mProtocol = savedInstanceState.getInt(AlertView.KEY_PROTOCOL);
+			mHostname = savedInstanceState.getString(AlertView.KEY_HOSTNAME);
+			mInterfaceName = savedInstanceState.getString(AlertView.KEY_INTERFACE_NAME);
+			mPayload = savedInstanceState.getString(AlertView.KEY_PAYLOAD);
+			mSport = savedInstanceState.getInt(AlertView.KEY_SPORT);
+			mDport = savedInstanceState.getInt(AlertView.KEY_DPORT);
+			mType = savedInstanceState.getByte(AlertView.KEY_TYPE);
+			mCode = savedInstanceState.getByte(AlertView.KEY_CODE);
 			mGotAlert = savedInstanceState.getBoolean("mGotAlert");
 		} else {
 			Bundle extras = getIntent().getExtras();
@@ -216,7 +276,7 @@ public class AlertView extends Activity{
 			Thread thread = new Thread(alertRunnable);
 			thread.start();
 		} else {
-	    	//fillData();
+	    	fillData();
 		}
 	}
     
@@ -230,9 +290,9 @@ public class AlertView extends Activity{
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		// save not only server row, but all the search strings
-		//if(!mGotAlert)
-		//	pd.dismiss();
-		outState.putLong("mGotAlert", mRowId);
+		if(!mGotAlert)
+			pd.dismiss();
+		outState.putLong(ServerDbAdapter.KEY_ROWID, mRowId);
 		outState.putLong(AlertDbAdapter.KEY_CID, mCid);
 		outState.putLong(AlertDbAdapter.KEY_SID, mSid);
 		outState.putString(AlertDbAdapter.KEY_SIG_NAME, mSigName);
@@ -241,5 +301,182 @@ public class AlertView extends Activity{
 		outState.putString("date", mDate);
 		outState.putString("time", mTime);
 		outState.putByte(AlertDbAdapter.KEY_SIG_PRIORITY, mSigPriority);
+		outState.putInt(AlertView.KEY_PROTOCOL, mProtocol);
+		outState.putString(AlertView.KEY_HOSTNAME, mHostname);
+		outState.putString(AlertView.KEY_INTERFACE_NAME, mInterfaceName);
+		outState.putString(AlertView.KEY_PAYLOAD, mPayload);
+		outState.putInt(AlertView.KEY_SPORT, mSport);
+		outState.putInt(AlertView.KEY_DPORT, mDport);
+		outState.putByte(AlertView.KEY_TYPE, mType);
+		outState.putByte(AlertView.KEY_CODE, mCode);
+		outState.putBoolean("mGotAlert", mGotAlert);
+	}
+	
+	protected void fillData(){
+		switch(mSigPriority){
+			case 1:
+				alertIcon.setImageResource(R.drawable.low_large);
+			break;
+			case 2:
+				alertIcon.setImageResource(R.drawable.warn_large);
+			break;
+			case 3:
+				alertIcon.setImageResource(R.drawable.high_large);
+			break;
+		}
+		alertText.setText(mSigName);
+
+		TableLayout generalTableLayout = createInfoTable("General", R.id.alert_view_sig_name_text, AlertView.GENERAL_INFO_TABLE_ID); 
+		String[] generalLabels = {"Date", "Time", "Sensor Address", "Interface"};
+		String[] generalValues = {mDate, mTime, mHostname, mInterfaceName};
+		addRowsToTable(generalLabels, generalValues, generalTableLayout);
+		
+		TableLayout ipTableLayout = createInfoTable("IP", AlertView.GENERAL_INFO_TABLE_ID, AlertView.IP_INFO_TABLE_ID); 
+		String[] ipLabels = {"Src Address", "Dst Address"};
+		String[] ipValues = {ipmath.longToString(mIpSrc), ipmath.longToString(mIpDst)};
+		addRowsToTable(ipLabels, ipValues, ipTableLayout);
+		Log.w("STRINNNG",Integer.toString(mProtocol));
+		String  protocol = null;
+		String[] protocolLabels = null;
+		String[] protocolValues = null;
+		switch(mProtocol){
+			case AlertXMLHandler.PROTO_ICMP:
+				protocol = "ICMP";
+				String typeString = "";
+				String codeString = "";
+				switch(mType){
+					case 0: typeString = "Echo Reply"; break; 
+					case 3:
+						typeString = "Destination Unreachable";
+						switch(mCode){
+							case 0: codeString = "Network Unreachable"; break;
+							case 1: codeString = "Host Unreachable"; break;
+							case 2: codeString = "Protocol Unreachable"; break;
+							case 3: codeString = "Port Unreachable"; break;
+							case 4: codeString = "Fragmentation Needed/DF set"; break;
+							case 5: codeString = "Source Route Failed"; break;
+							case 6: codeString = "Destination Network Unknown"; break;
+							case 7: codeString = "Destination Host Unknown"; break;
+							case 8: codeString = "Source Host Isolated"; break;
+							case 9: codeString = "Communication with Destination Network is Administratively Prohibited"; break;
+							case 10: codeString = "Communication with Destination Host is Administratively Prohibited"; break;
+							case 11: codeString = "Destination Network Unreachable for Type of Service"; break;
+							case 12: codeString = "Destination Host Unreachable for Type of Service"; break;
+							case 13: codeString = "Packet filtered"; break;
+							case 14: codeString = "Precedence violation"; break;
+							case 15: codeString = "Precedence cut off"; break;
+						}
+					break;
+					case 4: typeString = "Source Quench"; break;
+					case 5:
+						typeString = "Redirect";
+						switch(mCode){
+							case 0: codeString = "Redirect Datagram for the Network"; break;
+							case 1: codeString = "Redirect Datagram for the Host"; break;
+							case 2: codeString = "Redirect Datagram for the Type of Service and Network"; break;
+							case 3: codeString = "Redirect Datagram for the Type of Service and Host"; break;
+						}
+					break;
+					case 6:
+						typeString = "Alternate Host Address";
+						switch(mCode){ case 0: codeString = "Alternate Address for Host"; break; }
+					break;
+					case 8: typeString = "Echo Request"; break;
+					case 9: typeString = "Router Advertisement"; break;
+					case 10: typeString = "Router Solicitation"; break;
+					case 11: typeString = "Time Exceeded"; break;
+					case 12: typeString = "Parameter Problem"; break;
+					case 13: typeString = "Timestamp Request"; break;
+					case 14: typeString = "Timestamp Reply"; break;
+					case 15: typeString = "Information Request"; break;
+					case 16: typeString = "Information Reply"; break;
+					case 17: typeString = "Address Mask Request"; break;
+					case 18: typeString = "Address Mask Reply"; break;
+					case 30: typeString = "Traceroute"; break;
+					case 31: typeString = "Datagram Conversion Error"; break;
+					case 40:
+						typeString = "Redirect";
+						switch(mCode){
+							case 0: codeString = "Bad SPI"; break;
+							case 1: codeString = "Authentication Failed"; break;
+							case 2: codeString = "Redirect Datagram for the Type of Service and Network"; break;
+							case 3: codeString = "Decryption Failed"; break;
+							case 4: codeString = "Need Authentication"; break;
+							case 5: codeString = "Need Authorization"; break;
+						}
+					break;
+				}
+				protocolLabels = new String[]{"Type", "Code"};
+				protocolValues = new String[]{String.valueOf(mType) + (typeString.length() > 0 ? " (" + typeString + ")" : ""), String.valueOf(mCode) + (codeString.length() > 0 ? " (" + codeString + ")" : "")};
+			break;
+			case AlertXMLHandler.PROTO_TCP:
+				protocol = "TCP";
+				protocolLabels = new String[]{"Src Port", "Dst Port"};
+				protocolValues = new String[]{String.valueOf(mSport), String.valueOf(mDport)};
+			break;
+			case AlertXMLHandler.PROTO_UDP:
+				protocol = "UDP";
+				protocolLabels = new String[]{"Src Port", "Dst Port"};
+				protocolValues = new String[]{String.valueOf(mSport), String.valueOf(mDport)};
+			break;
+		}
+		if(protocol != null){
+			TableLayout protocolTableLayout = createInfoTable(protocol, AlertView.IP_INFO_TABLE_ID, AlertView.PROTO_INFO_TABLE_ID);
+			addRowsToTable(protocolLabels, protocolValues, protocolTableLayout);
+		}
+		if(mPayload.length() > 0){
+			int parentId;
+			if(protocol != null){
+				parentId = AlertView.PROTO_INFO_TABLE_ID;
+			} else {
+				parentId = AlertView.IP_INFO_TABLE_ID;
+			}
+			TableLayout payloadTableLayout = createInfoTable("Payload", parentId, AlertView.PAYLOAD_INFO_TABLE_ID);
+		}
+	}
+	
+	TableLayout createInfoTable(String label, int below, int id){
+		RelativeLayout infoTable = (RelativeLayout) inflater.inflate(R.layout.alert_view_info_table, (ViewGroup) findViewById(R.id.alert_view_info_table_layout_root));
+		TextView infoTableLabel = (TextView) infoTable.findViewById(R.id.alert_view_info_table_label);
+		LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
+		params.addRule(RelativeLayout.BELOW, below);
+		infoTableLabel.setText(label);
+		infoTable.setLayoutParams(params);
+		infoTable.setId(id);
+		relativeLayout.addView(infoTable);
+
+		TableLayout tableLayout = (TableLayout) infoTable.findViewById(R.id.alert_view_info_table_tablelayout);
+		return tableLayout;
+	}
+	
+	void addRowsToTable(String[] labels, String[] values, TableLayout tableLayout){
+		TableRow row = null;
+		TableRow.LayoutParams paramsLeft = null;
+		TableRow.LayoutParams paramsRight = null;
+		TextView leftCell = null;
+		TextView rightCell = null;
+		for(int x = 0; x < labels.length; x++){
+			row = new TableRow(this);
+			row.setWeightSum(1.0f);
+			paramsLeft = new TableRow.LayoutParams(1);
+			paramsLeft.weight = .4f;
+			paramsLeft.gravity = Gravity.LEFT;
+			paramsLeft.width = 0;
+			paramsRight = new TableRow.LayoutParams(2);
+			paramsRight.weight = .6f;
+			paramsRight.gravity = Gravity.LEFT;
+			paramsRight.width = 0;
+			leftCell = new TextView(this);
+			leftCell.setText(labels[x]);
+			leftCell.setTextColor(Color.WHITE);
+			leftCell.setLayoutParams(paramsLeft);
+			rightCell = new TextView(this);
+			rightCell.setText(values[x]);
+			rightCell.setTextColor(Color.WHITE);
+			rightCell.setLayoutParams(paramsRight);
+			row.addView(leftCell);
+			row.addView(rightCell);
+			tableLayout.addView(row);
+		}
 	}
 }

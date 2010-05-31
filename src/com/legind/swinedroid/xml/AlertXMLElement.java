@@ -2,7 +2,7 @@ package com.legind.swinedroid.xml;
 
 
 public class AlertXMLElement extends Object {
-	public String protocol;
+	public int protocol;
 	public String hostname;
 	public String interface_name;
 	public String payload;

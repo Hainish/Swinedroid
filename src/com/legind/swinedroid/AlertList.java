@@ -1,6 +1,7 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
+import com.legind.swinedroid.ipmath.*;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -10,7 +11,6 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
-
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -397,9 +397,9 @@ public class AlertList extends ListActivity{
 				}
 				item.put("sig_name",alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_NAME)));
 				long ipSrc = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC));
-				item.put("ip_src","Source IP: " + Integer.toString((int) ((ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipSrc % 256)));
+				item.put("ip_src","Source IP: " + ipmath.longToString(ipSrc));
 				long ipDst = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST));
-				item.put("ip_dst","Destination IP: " + Integer.toString((int) ((ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (ipDst % 256)));
+				item.put("ip_dst","Destination IP: " + ipmath.longToString(ipDst));
 				Timestamp timestamp = Timestamp.valueOf(alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_TIMESTAMP)));
 				item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
 				item.put("timestamp_time",hourMinuteSecondFormat.format((Date) timestamp));
@@ -412,7 +412,7 @@ public class AlertList extends ListActivity{
 				thisTracker.ip_src = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_SRC));
 				thisTracker.ip_dst = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_DST));
 				thisTracker.timestamp_date = yearMonthDayFormat.format((Date) timestamp);
-				thisTracker.timestamp_time = yearMonthDayFormat.format((Date) timestamp);
+				thisTracker.timestamp_time = hourMinuteSecondFormat.format((Date) timestamp);
 				thisTracker.sig_priority = (byte) alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY));
 				AlertListTracker.add(thisTracker);
 			} while(alertsCursor.moveToNext());	
@@ -445,8 +445,8 @@ public class AlertList extends ListActivity{
 				break;
 			}
 			item.put("sig_name",thisAlertListXMLElement.sigName);
-			item.put("ip_src","Source IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipSrc % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipSrc % 256)));
-			item.put("ip_dst","Destination IP: " + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 4)) / Math.pow(256, 3))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 3)) / Math.pow(256, 2))) + "." + Integer.toString((int) ((thisAlertListXMLElement.ipDst % Math.pow(256, 2)) / 256)) + "." + Integer.toString((int) (thisAlertListXMLElement.ipDst % 256)));
+			item.put("ip_src","Source IP: " + ipmath.longToString(thisAlertListXMLElement.ipSrc));
+			item.put("ip_dst","Destination IP: " + ipmath.longToString(thisAlertListXMLElement.ipDst));
 			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
 			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
 			list.add(item);
@@ -458,7 +458,7 @@ public class AlertList extends ListActivity{
 			thisTracker.ip_src = thisAlertListXMLElement.ipSrc;
 			thisTracker.ip_dst = thisAlertListXMLElement.ipDst;
 			thisTracker.timestamp_date = yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp);
-			thisTracker.timestamp_time = yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp);
+			thisTracker.timestamp_time = hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp);
 			thisTracker.sig_priority = thisAlertListXMLElement.sigPriority;
 			AlertListTracker.add(thisTracker);
 		}
@@ -477,6 +477,8 @@ public class AlertList extends ListActivity{
         AlertListTracker tracker = AlertListTracker.get((int)id);
         Log.w("", Long.toString(tracker.cid) + " " + Long.toString(tracker.sid));
         Intent i = new Intent(this, AlertView.class);
+
+    	i.putExtra(AlertDbAdapter.KEY_ROWID, mRowId);
         i.putExtra(AlertDbAdapter.KEY_CID, tracker.cid);
         i.putExtra(AlertDbAdapter.KEY_SID, tracker.sid);
         i.putExtra(AlertDbAdapter.KEY_SIG_NAME, tracker.sig_name);

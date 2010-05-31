@@ -18,6 +18,9 @@ public class AlertXMLHandler extends XMLHandler{
 	private boolean inType = false;
 	private boolean inCode = false;
 	public AlertXMLElement alert;
+	public static final int PROTO_ICMP = 1;
+	public static final int PROTO_TCP = 2;
+	public static final int PROTO_UDP = 3;
 	
 	@Override
 	public void startElement(String uri, String name, String qName, Attributes atts){
@@ -83,21 +86,18 @@ public class AlertXMLHandler extends XMLHandler{
 		}
 	}
 	
-	public String protocol;
-	public String hostname;
-	public String interface_name;
-	public String payload;
-	public int sport;
-	public int dport;
-	public byte type;
-	public byte code;
-	
 	@Override
 	public void characters(char ch[], int start, int length){
 		super.characters(ch, start, length);
 		String chars = (new String(ch).substring(start, start + length));
-		if(inAlert && inProtocol)
-			alert.protocol = chars;
+		if(inAlert && inProtocol){
+			if(chars.equals("icmp"))
+				alert.protocol = AlertXMLHandler.PROTO_ICMP;
+			if(chars.equals("tcp"))
+				alert.protocol = AlertXMLHandler.PROTO_TCP;
+			if(chars.equals("udp"))
+				alert.protocol = AlertXMLHandler.PROTO_UDP;
+		}
 		if(inAlert && inHostname)
 			alert.hostname = chars;
 		if(inAlert && inInterface)
