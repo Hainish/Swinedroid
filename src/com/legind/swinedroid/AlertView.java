@@ -1,6 +1,8 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 
 import org.xml.sax.SAXException;
 
@@ -424,7 +426,7 @@ public class AlertView extends Activity{
 			TableLayout protocolTableLayout = createInfoTable(protocol, AlertView.IP_INFO_TABLE_ID, AlertView.PROTO_INFO_TABLE_ID);
 			addRowsToTable(protocolLabels, protocolValues, protocolTableLayout);
 		}
-		if(mPayload.length() > 0){
+		if(mPayload != null){
 			int parentId;
 			if(protocol != null){
 				parentId = AlertView.PROTO_INFO_TABLE_ID;
@@ -432,6 +434,7 @@ public class AlertView extends Activity{
 				parentId = AlertView.IP_INFO_TABLE_ID;
 			}
 			TableLayout payloadTableLayout = createInfoTable("Payload", parentId, AlertView.PAYLOAD_INFO_TABLE_ID);
+			addPayloadRowsToTable(mPayload, payloadTableLayout);
 		}
 	}
 	
@@ -477,6 +480,56 @@ public class AlertView extends Activity{
 			row.addView(leftCell);
 			row.addView(rightCell);
 			tableLayout.addView(row);
+		}
+	}
+	
+	void addPayloadRowsToTable(String hexString, TableLayout tableLayout){
+		try {
+			byte[] asciiBytes = new BigInteger(hexString, 16).toByteArray();
+			String asciiString;
+			asciiString = new String(asciiBytes, "US-ASCII");
+			Log.w("tets",asciiString);
+			int positionTracker = 0;
+			TableRow row = null;
+			TableRow.LayoutParams paramsCell[] = new TableRow.LayoutParams[12];
+			TextView cell[] =  new TextView[12];
+			while(hexString.length() > positionTracker){
+				row = new TableRow(this);
+				row.setWeightSum(1.0f);
+				for(int i = 0; i < 12; i++){
+					paramsCell[i] = new TableRow.LayoutParams();
+					cell[i] = new TextView(this);
+					paramsCell[i].column = i + 1;
+					if(i < 5){
+						paramsCell[i].weight = .1f;
+					} else if(i == 5){
+						paramsCell[i].weight = .2f;
+					} else {
+						paramsCell[i].weight = .05f;
+					}
+					paramsCell[i].gravity = Gravity.LEFT;
+					paramsCell[i].width = 0;
+					if(i < 6){
+						if(hexString.length() > positionTracker + i*2 + 1){
+							cell[i].setText(hexString.substring(positionTracker + i*2, positionTracker + i*2 + 2));
+						}
+					} else {
+						if(hexString.length() > positionTracker + (i - 6)*2 + 1){
+							if(hexString.length() > positionTracker + (i - 6)*2 + 1){
+								cell[i].setText(asciiString.substring(positionTracker / 2 + (i - 6), positionTracker / 2 + (i - 6) + 1).replace("\n", ""));
+							}
+						}
+					}
+					cell[i].setTextColor(Color.WHITE);
+					cell[i].setLayoutParams(paramsCell[i]);
+					row.addView(cell[i]);
+				}
+				positionTracker += 12;
+				tableLayout.addView(row);
+			}
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			Log.w(LOG_TAG, e.toString());
 		}
 	}
 }
