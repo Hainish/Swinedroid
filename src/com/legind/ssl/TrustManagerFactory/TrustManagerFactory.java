@@ -104,22 +104,10 @@ public final class TrustManagerFactory {
 	static {
 		try {
 			javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance("X509");
-			ListActivity LA = Swinedroid.LA;
-			keyStoreFile = new File(LA.getDir("KeyStore", Context.MODE_PRIVATE) + File.separator + "KeyStore.bks");
 			
 			keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			java.io.FileInputStream fis;
 			try {
-				fis = new java.io.FileInputStream(keyStoreFile);
-			} catch (FileNotFoundException e1) {
-				fis = null;
-				Log.w(LOG_TAG, e1.toString());
-			}
-			try {
-				keyStore.load(fis, "".toCharArray());
-				//if (fis != null) {
-				// fis.close();
-				//}
+				keyStore.load(null, "".toCharArray());
 			} catch (IOException e) {
 				Log.e(LOG_TAG, "KeyStore IOException while initializing TrustManagerFactory ", e);
 				keyStore = null;
