@@ -1,10 +1,3 @@
-/**
- * Copyright (C) 2010 - William Budington
- * Licensed under GPLv3
- * 
- * Adapted from AChartEngine - Copyright (C) 2009 SC 4ViewSoft SRL
- * Licensed under the Apache License, Version 2.0
- */
 package org.achartengine.chartlib;
 
 import java.util.Date;
