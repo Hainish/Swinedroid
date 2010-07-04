@@ -7,10 +7,44 @@
           android:layout_width="fill_parent"
         	android:layout_height="wrap_content"
 			android:layout_margin="10px"/>
-  	<TextView android:id="@+id/android:empty"
-          android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:text="@string/no_servers"
-        	android:textSize="18sp"
-			android:layout_margin="10px"/>
+	<ScrollView android:id="@+id/android:empty"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		<RelativeLayout
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:orientation="horizontal"
+		    android:padding="10dp">
+		  	<TextView android:id="@+id/no_servers"
+		  		android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+	        	android:text="@string/no_servers"
+	        	android:textSize="22sp"
+	        	android:textColor="#FF6E6E"
+	        	android:textStyle="bold"
+				android:layout_margin="10px"/>
+		  	<TextView android:id="@+id/no_servers_cont"
+		  		android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+	        	android:layout_below="@id/no_servers"
+	        	android:text="@string/no_servers_cont"
+	        	android:textSize="20sp"
+				android:layout_margin="10px"/>
+		  	<TextView android:id="@+id/download_server"
+		  		android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+	        	android:layout_below="@id/no_servers_cont"
+	        	android:text="@string/download_server"
+	        	android:textSize="17sp"
+	        	android:autoLink="web"
+				android:layout_margin="10px"/>
+		  	<TextView android:id="@+id/license_info"
+		  		android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+	        	android:layout_below="@id/download_server"
+	        	android:text="@string/license_info"
+	        	android:textSize="14sp"
+				android:layout_margin="10px"/>
+		</RelativeLayout>
+	</ScrollView>
 </LinearLayout>
