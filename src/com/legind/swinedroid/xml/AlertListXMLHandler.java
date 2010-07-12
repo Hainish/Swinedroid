@@ -1,6 +1,8 @@
 package com.legind.swinedroid.xml;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -95,30 +97,32 @@ public class AlertListXMLHandler extends XMLHandler{
 	
 	@Override
 	public void characters(char ch[], int start, int length){
-		super.characters(ch, start, length);
-		String chars = (new String(ch).substring(start, start + length));
-		if(inNumAlerts)
-			numAlerts = Long.parseLong(chars);
-		if(inAlert && inSid)
-			alertList.getLast().sid = Long.parseLong(chars);
-		if(inAlert && inCid)
-			alertList.getLast().cid = Long.parseLong(chars);
-		if(inAlert && inIpSrc)
-			alertList.getLast().ipSrc = Long.parseLong(chars);
-		if(inAlert && inIpDst)
-			alertList.getLast().ipDst = Long.parseLong(chars);
-		if(inAlert && inSigPriority)
-			alertList.getLast().sigPriority = Byte.parseByte(chars);
-		if(inAlert && inSigName){
-			alertList.getLast().sigName = chars;
-		}
-		if(inAlert && inTimestamp){;
-			try {
+		try{
+			super.characters(ch, start, length);
+			String chars = (new String(ch).substring(start, start + length));
+			if(inNumAlerts)
+				numAlerts = Long.parseLong(chars);
+			if(inAlert && inSid)
+				alertList.getLast().sid = Long.parseLong(chars);
+			if(inAlert && inCid)
+				alertList.getLast().cid = Long.parseLong(chars);
+			if(inAlert && inIpSrc)
+				alertList.getLast().ipSrc = InetAddress.getByName(chars);
+			if(inAlert && inIpDst)
+				alertList.getLast().ipDst = InetAddress.getByName(chars);
+			if(inAlert && inSigPriority)
+				alertList.getLast().sigPriority = Byte.parseByte(chars);
+			if(inAlert && inSigName){
+				alertList.getLast().sigName = chars;
+			}
+			if(inAlert && inTimestamp){
 				Date parsed_date = dateFormat.parse(chars);
 				alertList.getLast().timestamp = new Timestamp(parsed_date.getTime());
-			} catch (ParseException e) {
-				Log.w(TAG, e.toString());
 			}
+		} catch (UnknownHostException e) {
+			Log.w(TAG, e.toString());
+		} catch (ParseException e) {
+			Log.w(TAG, e.toString());
 		}
 	}
 	

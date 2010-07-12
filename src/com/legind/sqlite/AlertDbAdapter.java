@@ -1,5 +1,6 @@
 package com.legind.sqlite;
 
+import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -51,14 +52,14 @@ public class AlertDbAdapter extends DbAdapter{
 	 * @param timestamp when the alert occurred
 	 * @return rowId or -1 if failed
 	 */
-	public long createAlert(long sid, long cid, long ipSrc, long ipDst, byte sigPriority, String sigName, Timestamp timestamp) {
+	public long createAlert(long sid, long cid, InetAddress ipSrc, InetAddress ipDst, byte sigPriority, String sigName, Timestamp timestamp) {
 	    ContentValues initialValues = new ContentValues();
 	    String timestampString;
 	    timestampString = timestamp.toString().substring(0,19);
 	    initialValues.put(KEY_SID, sid);
 	    initialValues.put(KEY_CID, cid);
-	    initialValues.put(KEY_IP_SRC, ipSrc);
-	    initialValues.put(KEY_IP_DST, ipDst);
+	    initialValues.put(KEY_IP_SRC, ipSrc.getAddress());
+	    initialValues.put(KEY_IP_DST, ipDst.getAddress());
 	    initialValues.put(KEY_SIG_PRIORITY, sigPriority);
 	    initialValues.put(KEY_SIG_NAME, sigName);
 	    initialValues.put(KEY_TIMESTAMP, timestampString);
@@ -77,17 +78,18 @@ public class AlertDbAdapter extends DbAdapter{
 		// if the alertList is empty, exit with -1
 		if(alertList.isEmpty())
 			return false;
-		StringBuffer insertStringBuffer = new StringBuffer("INSERT INTO alerts (sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp) SELECT sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp FROM (");
+		StringBuffer insertStringBuffer = new StringBuffer("INSERT INTO alerts (sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp) SELECT sid, cid, ip_src, ip_dst, sig_priority, sig_name, timestamp FROM ("); 
 		// iterate through the list of alerts, preparing a set of properties, send them to the database
 		ListIterator<AlertListXMLElement> itr = alertList.listIterator();
 		AlertListXMLElement firstAlertListXMLElement = (AlertListXMLElement) itr.next();
-		insertStringBuffer.append("SELECT " + String.valueOf(firstAlertListXMLElement.sid) + " AS sid, " + String.valueOf(firstAlertListXMLElement.cid) + " AS cid, " + String.valueOf(firstAlertListXMLElement.ipSrc) + " AS ip_src, " + String.valueOf(firstAlertListXMLElement.ipDst) + " AS ip_dst, " + String.valueOf(firstAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + firstAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + firstAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
+		insertStringBuffer.append("SELECT " + String.valueOf(firstAlertListXMLElement.sid) + " AS sid, " + String.valueOf(firstAlertListXMLElement.cid) + " AS cid, x'" + getHex(firstAlertListXMLElement.ipSrc.getAddress()) + "' AS ip_src, x'" + getHex(firstAlertListXMLElement.ipDst.getAddress()) + "' AS ip_dst, " + String.valueOf(firstAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + firstAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + firstAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
 		while(itr.hasNext()){
 			AlertListXMLElement thisAlertListXMLElement = (AlertListXMLElement) itr.next();
-			insertStringBuffer.append(" UNION SELECT " + String.valueOf(thisAlertListXMLElement.sid) + " AS sid, " + String.valueOf(thisAlertListXMLElement.cid) + " AS cid, " + String.valueOf(thisAlertListXMLElement.ipSrc) + " AS ip_src, " + String.valueOf(thisAlertListXMLElement.ipDst) + " AS ip_dst, " + String.valueOf(thisAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + thisAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + thisAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
+			insertStringBuffer.append(" UNION SELECT " + String.valueOf(thisAlertListXMLElement.sid) + " AS sid, " + String.valueOf(thisAlertListXMLElement.cid) + " AS cid, x'" + getHex(thisAlertListXMLElement.ipSrc.getAddress()) + "' AS ip_src, x'" + getHex(thisAlertListXMLElement.ipDst.getAddress()) + "' AS ip_dst, " + String.valueOf(thisAlertListXMLElement.sigPriority) + " AS sig_priority, \"" + thisAlertListXMLElement.sigName.replace("\"","\"\"") + "\" AS sig_name, \"" + thisAlertListXMLElement.timestamp.toString().substring(0,19) + "\" AS timestamp, " + String.valueOf(itr.nextIndex()) + " AS sort_index");
 		}
 		insertStringBuffer.append(") ORDER BY sort_index ASC");
 		super.mDb.execSQL(insertStringBuffer.toString());
 		return true;
     }
+
 }

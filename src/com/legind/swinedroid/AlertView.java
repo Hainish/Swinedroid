@@ -3,6 +3,8 @@ package com.legind.swinedroid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.xml.sax.SAXException;
 
@@ -31,7 +33,6 @@ import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
 import com.legind.ssl.CertificateInspect.CertificateInspect;
-import com.legind.swinedroid.ipmath.ipmath;
 import com.legind.swinedroid.xml.AlertXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -43,8 +44,8 @@ public class AlertView extends Activity{
 	private long mCid;
 	private long mSid;
 	private String mSigName;
-	private long mIpSrc;
-	private long mIpDst;
+	private InetAddress mIpSrc;
+	private InetAddress mIpDst;
 	private String mDate;
 	private String mTime;
 	private byte mSigPriority;
@@ -204,81 +205,85 @@ public class AlertView extends Activity{
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-    	// Open up the XML and db handlers
-		mAlertXMLHandler = new AlertXMLHandler();
-		mDbHelper = new ServerDbAdapter(this);
-		mDbHelper.open();
-		inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		layout = (LinearLayout) inflater.inflate(R.layout.alert_view, (ViewGroup) findViewById(R.id.alert_view_layout_root));
-		relativeLayout = (RelativeLayout) layout.findViewById(R.id.alert_view_relative_layout);
-		setContentView(layout);
-		
-		// initial value of mGotAlert is false
-		mGotAlert = false;
-		
-		// create the runnables
-		alertRunnable = new AlertDisplayRunnable();
-
-		alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
-		alertText = (TextView) layout.findViewById(R.id.alert_view_sig_name_text);
-
-		if(savedInstanceState != null){
-			// if we have a savedInstanceState, load the strings directly
-			mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
-	        mCid = savedInstanceState.getLong(AlertDbAdapter.KEY_CID);
-	        mSid = savedInstanceState.getLong(AlertDbAdapter.KEY_SID);
-	        mSigName = savedInstanceState.getString(AlertDbAdapter.KEY_SIG_NAME);
-	        mIpSrc = savedInstanceState.getLong(AlertDbAdapter.KEY_IP_SRC);
-	        mIpDst = savedInstanceState.getLong(AlertDbAdapter.KEY_IP_DST);
-	        mDate = savedInstanceState.getString("date");
-	        mTime = savedInstanceState.getString("time");
-			mSigPriority = savedInstanceState.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
-			mProtocol = savedInstanceState.getInt(AlertView.KEY_PROTOCOL);
-			mHostname = savedInstanceState.getString(AlertView.KEY_HOSTNAME);
-			mInterfaceName = savedInstanceState.getString(AlertView.KEY_INTERFACE_NAME);
-			mPayload = savedInstanceState.getString(AlertView.KEY_PAYLOAD);
-			mSport = savedInstanceState.getInt(AlertView.KEY_SPORT);
-			mDport = savedInstanceState.getInt(AlertView.KEY_DPORT);
-			mType = savedInstanceState.getByte(AlertView.KEY_TYPE);
-			mCode = savedInstanceState.getByte(AlertView.KEY_CODE);
-			mGotAlert = savedInstanceState.getBoolean("mGotAlert");
-		} else {
-			Bundle extras = getIntent().getExtras();
-			if(extras != null){
-				// if we have an intent, construct the strings from chosen fields.  add 1 to months
-				mRowId = extras.getLong(ServerDbAdapter.KEY_ROWID);
-				mCid = extras.getLong(AlertDbAdapter.KEY_CID);
-				mSid = extras.getLong(AlertDbAdapter.KEY_SID);
-				mSigName = extras.getString(AlertDbAdapter.KEY_SIG_NAME);
-				mIpSrc = extras.getLong(AlertDbAdapter.KEY_IP_SRC);
-				mIpDst = extras.getLong(AlertDbAdapter.KEY_IP_DST);
-				mDate = extras.getString("date");
-				mTime = extras.getString("time");
-				mSigPriority = extras.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
+		try{
+			super.onCreate(savedInstanceState);
+	    	// Open up the XML and db handlers
+			mAlertXMLHandler = new AlertXMLHandler();
+			mDbHelper = new ServerDbAdapter(this);
+			mDbHelper.open();
+			inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			layout = (LinearLayout) inflater.inflate(R.layout.alert_view, (ViewGroup) findViewById(R.id.alert_view_layout_root));
+			relativeLayout = (RelativeLayout) layout.findViewById(R.id.alert_view_relative_layout);
+			setContentView(layout);
+			
+			// initial value of mGotAlert is false
+			mGotAlert = false;
+			
+			// create the runnables
+			alertRunnable = new AlertDisplayRunnable();
+	
+			alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
+			alertText = (TextView) layout.findViewById(R.id.alert_view_sig_name_text);
+	
+			if(savedInstanceState != null){
+				// if we have a savedInstanceState, load the strings directly
+				mRowId = savedInstanceState.getLong(ServerDbAdapter.KEY_ROWID);
+		        mCid = savedInstanceState.getLong(AlertDbAdapter.KEY_CID);
+		        mSid = savedInstanceState.getLong(AlertDbAdapter.KEY_SID);
+		        mSigName = savedInstanceState.getString(AlertDbAdapter.KEY_SIG_NAME);
+		        mIpSrc = InetAddress.getByAddress(savedInstanceState.getByteArray(AlertDbAdapter.KEY_IP_SRC));
+		        mIpDst = InetAddress.getByAddress(savedInstanceState.getByteArray(AlertDbAdapter.KEY_IP_DST));
+		        mDate = savedInstanceState.getString("date");
+		        mTime = savedInstanceState.getString("time");
+				mSigPriority = savedInstanceState.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
+				mProtocol = savedInstanceState.getInt(AlertView.KEY_PROTOCOL);
+				mHostname = savedInstanceState.getString(AlertView.KEY_HOSTNAME);
+				mInterfaceName = savedInstanceState.getString(AlertView.KEY_INTERFACE_NAME);
+				mPayload = savedInstanceState.getString(AlertView.KEY_PAYLOAD);
+				mSport = savedInstanceState.getInt(AlertView.KEY_SPORT);
+				mDport = savedInstanceState.getInt(AlertView.KEY_DPORT);
+				mType = savedInstanceState.getByte(AlertView.KEY_TYPE);
+				mCode = savedInstanceState.getByte(AlertView.KEY_CODE);
+				mGotAlert = savedInstanceState.getBoolean("mGotAlert");
+			} else {
+				Bundle extras = getIntent().getExtras();
+				if(extras != null){
+					// if we have an intent, construct the strings from chosen fields.  add 1 to months
+					mRowId = extras.getLong(ServerDbAdapter.KEY_ROWID);
+					mCid = extras.getLong(AlertDbAdapter.KEY_CID);
+					mSid = extras.getLong(AlertDbAdapter.KEY_SID);
+					mSigName = extras.getString(AlertDbAdapter.KEY_SIG_NAME);
+					mIpSrc = InetAddress.getByAddress(extras.getByteArray(AlertDbAdapter.KEY_IP_SRC));
+					mIpDst = InetAddress.getByAddress(extras.getByteArray(AlertDbAdapter.KEY_IP_DST));
+					mDate = extras.getString("date");
+					mTime = extras.getString("time");
+					mSigPriority = extras.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
+				}
 			}
-		}
-
-		if (mRowId != null) {
-			Cursor server = mDbHelper.fetch(mRowId);
-			startManagingCursor(server);
-			mHostText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
-			mPortInt = server.getInt(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT));
-			mUsernameText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
-			mPasswordText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-		}
-
-		if(!mGotAlert){
-			// Display the progress dialog first
-			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-			Thread thread = new Thread(alertRunnable);
-			thread.start();
-		} else {
-	    	fillData();
+	
+			if (mRowId != null) {
+				Cursor server = mDbHelper.fetch(mRowId);
+				startManagingCursor(server);
+				mHostText = server.getString(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
+				mPortInt = server.getInt(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT));
+				mUsernameText = server.getString(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
+				mPasswordText = server.getString(server
+						.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
+			}
+	
+			if(!mGotAlert){
+				// Display the progress dialog first
+				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+				Thread thread = new Thread(alertRunnable);
+				thread.start();
+			} else {
+		    	fillData();
+			}
+		} catch (UnknownHostException e) {
+			Log.w(LOG_TAG,e.toString());
 		}
 	}
     
@@ -298,8 +303,8 @@ public class AlertView extends Activity{
 		outState.putLong(AlertDbAdapter.KEY_CID, mCid);
 		outState.putLong(AlertDbAdapter.KEY_SID, mSid);
 		outState.putString(AlertDbAdapter.KEY_SIG_NAME, mSigName);
-		outState.putLong(AlertDbAdapter.KEY_IP_SRC, mIpSrc);
-		outState.putLong(AlertDbAdapter.KEY_IP_DST, mIpDst);
+		outState.putByteArray(AlertDbAdapter.KEY_IP_SRC, mIpSrc.getAddress());
+		outState.putByteArray(AlertDbAdapter.KEY_IP_DST, mIpDst.getAddress());
 		outState.putString("date", mDate);
 		outState.putString("time", mTime);
 		outState.putByte(AlertDbAdapter.KEY_SIG_PRIORITY, mSigPriority);
@@ -335,7 +340,7 @@ public class AlertView extends Activity{
 		
 		TableLayout ipTableLayout = createInfoTable("IP", AlertView.GENERAL_INFO_TABLE_ID, AlertView.IP_INFO_TABLE_ID); 
 		String[] ipLabels = {"Src Address", "Dst Address"};
-		String[] ipValues = {ipmath.longToString(mIpSrc), ipmath.longToString(mIpDst)};
+		String[] ipValues = {mIpSrc.getHostAddress(), mIpDst.getHostAddress()};
 		addRowsToTable(ipLabels, ipValues, ipTableLayout);
 		Log.w("STRINNNG",Integer.toString(mProtocol));
 		String  protocol = null;
@@ -488,7 +493,6 @@ public class AlertView extends Activity{
 			byte[] asciiBytes = new BigInteger(hexString, 16).toByteArray();
 			String asciiString;
 			asciiString = new String(asciiBytes, "US-ASCII");
-			Log.w("tets",asciiString);
 			int positionTracker = 0;
 			TableRow row = null;
 			TableRow.LayoutParams paramsCell[] = new TableRow.LayoutParams[12];

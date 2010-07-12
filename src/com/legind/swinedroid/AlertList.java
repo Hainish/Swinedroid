@@ -1,7 +1,8 @@
 package com.legind.swinedroid;
 
 import java.io.IOException;
-import com.legind.swinedroid.ipmath.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 import org.xml.sax.SAXException;
+
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -74,8 +76,8 @@ public class AlertList extends ListActivity{
 		public long sid;
 		public long cid;
 		public String sig_name;
-		public long ip_src;
-		public long ip_dst;
+		public InetAddress ip_src;
+		public InetAddress ip_dst;
 		public String timestamp_date;
 		public String timestamp_time;
 		public byte sig_priority;
@@ -378,53 +380,58 @@ public class AlertList extends ListActivity{
     }
 
 	private void fillData() {
-		// get alerts from the alerts database, display them
-		Cursor alertsCursor = mAlertDbHelper.fetchAll();
-		startManagingCursor(alertsCursor);
-		if(alertsCursor.moveToFirst()){
-			do {
-				HashMap<String,String> item = new HashMap<String,String>();
-				switch(alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY))){
-					case 1:
-						item.put("icon", Integer.toString(R.drawable.low));
-					break;
-					case 2:
-						item.put("icon", Integer.toString(R.drawable.warn));
-					break;
-					case 3:
-						item.put("icon", Integer.toString(R.drawable.high));
-					break;
-				}
-				item.put("sig_name",alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_NAME)));
-				long ipSrc = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC));
-				item.put("ip_src","Source IP: " + ipmath.longToString(ipSrc));
-				long ipDst = alertsCursor.getLong(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST));
-				item.put("ip_dst","Destination IP: " + ipmath.longToString(ipDst));
-				Timestamp timestamp = Timestamp.valueOf(alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_TIMESTAMP)));
-				item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
-				item.put("timestamp_time",hourMinuteSecondFormat.format((Date) timestamp));
-				list.add(item);
-				// Remember to add a tracker for the UIDs of this alert as well
-				AlertListTracker thisTracker = new AlertListTracker();
-				thisTracker.cid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_CID));
-				thisTracker.sid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SID));
-				thisTracker.sig_name = alertsCursor.getString(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SIG_NAME));
-				thisTracker.ip_src = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_SRC));
-				thisTracker.ip_dst = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_DST));
-				thisTracker.timestamp_date = yearMonthDayFormat.format((Date) timestamp);
-				thisTracker.timestamp_time = hourMinuteSecondFormat.format((Date) timestamp);
-				thisTracker.sig_priority = (byte) alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY));
-				AlertListTracker.add(thisTracker);
-			} while(alertsCursor.moveToNext());	
+		try{
+			// get alerts from the alerts database, display them
+			Cursor alertsCursor = mAlertDbHelper.fetchAll();
+			startManagingCursor(alertsCursor);
+			if(alertsCursor.moveToFirst()){
+				do {
+					HashMap<String,String> item = new HashMap<String,String>();
+					switch(alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY))){
+						case 1:
+							item.put("icon", Integer.toString(R.drawable.low));
+						break;
+						case 2:
+							item.put("icon", Integer.toString(R.drawable.warn));
+						break;
+						case 3:
+							item.put("icon", Integer.toString(R.drawable.high));
+						break;
+					}
+					item.put("sig_name",alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_NAME)));
+					
+					InetAddress ipSrc = InetAddress.getByAddress(alertsCursor.getBlob(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_SRC)));
+					item.put("ip_src","Source IP: " + ipSrc.getHostAddress());
+					InetAddress ipDst = InetAddress.getByAddress(alertsCursor.getBlob(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_IP_DST)));
+					item.put("ip_dst","Destination IP: " + ipDst.getHostAddress());
+					Timestamp timestamp = Timestamp.valueOf(alertsCursor.getString(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_TIMESTAMP)));
+					item.put("timestamp_date",yearMonthDayFormat.format((Date) timestamp));
+					item.put("timestamp_time",hourMinuteSecondFormat.format((Date) timestamp));
+					list.add(item);
+					// Remember to add a tracker for the UIDs of this alert as well
+					AlertListTracker thisTracker = new AlertListTracker();
+					thisTracker.cid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_CID));
+					thisTracker.sid = alertsCursor.getLong(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SID));
+					thisTracker.sig_name = alertsCursor.getString(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_SIG_NAME));
+					thisTracker.ip_src = InetAddress.getByAddress(alertsCursor.getBlob(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_SRC)));
+					thisTracker.ip_dst = InetAddress.getByAddress(alertsCursor.getBlob(alertsCursor.getColumnIndex(AlertDbAdapter.KEY_IP_DST)));
+					thisTracker.timestamp_date = yearMonthDayFormat.format((Date) timestamp);
+					thisTracker.timestamp_time = hourMinuteSecondFormat.format((Date) timestamp);
+					thisTracker.sig_priority = (byte) alertsCursor.getShort(alertsCursor.getColumnIndexOrThrow(AlertDbAdapter.KEY_SIG_PRIORITY));
+					AlertListTracker.add(thisTracker);
+				} while(alertsCursor.moveToNext());	
+			}
+	    	setContentView(R.layout.alert_list);
+	    	// keep track of the number of displayed alerts
+	    	mNumAlertsDisplayed = list.size();
+			//add the ViewSwitcher to the footer if there are more alerts than those displayed
+	    	if(mNumAlertsTotal > mNumAlertsDisplayed)
+	    		getListView().addFooterView(switcher);
+			alertListAdapter = new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text});
+			setListAdapter(alertListAdapter);
+		} catch (UnknownHostException e) {
+			Log.w(LOG_TAG,e.toString());
 		}
-    	setContentView(R.layout.alert_list);
-    	// keep track of the number of displayed alerts
-    	mNumAlertsDisplayed = list.size();
-		//add the ViewSwitcher to the footer if there are more alerts than those displayed
-    	if(mNumAlertsTotal > mNumAlertsDisplayed)
-    		getListView().addFooterView(switcher);
-		alertListAdapter = new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text});
-		setListAdapter(alertListAdapter);
     }
 
 	private void fillDataFromAlertList(LinkedList<AlertListXMLElement> alertList) {
@@ -445,8 +452,8 @@ public class AlertList extends ListActivity{
 				break;
 			}
 			item.put("sig_name",thisAlertListXMLElement.sigName);
-			item.put("ip_src","Source IP: " + ipmath.longToString(thisAlertListXMLElement.ipSrc));
-			item.put("ip_dst","Destination IP: " + ipmath.longToString(thisAlertListXMLElement.ipDst));
+			item.put("ip_src","Source IP: " + thisAlertListXMLElement.ipSrc.getHostAddress());
+			item.put("ip_dst","Destination IP: " + thisAlertListXMLElement.ipDst.getHostAddress());
 			item.put("timestamp_date",yearMonthDayFormat.format((Date) thisAlertListXMLElement.timestamp));
 			item.put("timestamp_time",hourMinuteSecondFormat.format((Date) thisAlertListXMLElement.timestamp));
 			list.add(item);
@@ -482,8 +489,8 @@ public class AlertList extends ListActivity{
         i.putExtra(AlertDbAdapter.KEY_CID, tracker.cid);
         i.putExtra(AlertDbAdapter.KEY_SID, tracker.sid);
         i.putExtra(AlertDbAdapter.KEY_SIG_NAME, tracker.sig_name);
-        i.putExtra(AlertDbAdapter.KEY_IP_SRC, tracker.ip_src);
-        i.putExtra(AlertDbAdapter.KEY_IP_DST, tracker.ip_dst);
+        i.putExtra(AlertDbAdapter.KEY_IP_SRC, tracker.ip_src.getAddress());
+        i.putExtra(AlertDbAdapter.KEY_IP_DST, tracker.ip_dst.getAddress());
         i.putExtra("date", tracker.timestamp_date);
         i.putExtra("time", tracker.timestamp_time);
         i.putExtra(AlertDbAdapter.KEY_SIG_PRIORITY, tracker.sig_priority);

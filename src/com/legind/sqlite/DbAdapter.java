@@ -16,21 +16,22 @@ public class DbAdapter {
 	private static final String TAG = "DbAdapter";
 	
 	private static final String DATABASE_NAME = "data";
-	private static final int DATABASE_VERSION = 8;
+	private static final int DATABASE_VERSION = 14;
 	private String dbTable;
 	private String[] fieldsString;
+	static final String HEXES = "0123456789ABCDEF";
 
 	/**
 	 * Database creation sql statement
 	 */
 	private static final String[] DATABASE_CREATE_STATEMENTS = {
-		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src int not null, ip_dst int not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar(19) not null);",
+		"create table alerts (_id integer primary key autoincrement, sid int not null, cid int not null, ip_src blob not null, ip_dst blob not null, sig_priority smallint not null, sig_name varchar not null, timestamp varchar(19) not null);",
 		"create table servers (_id integer primary key autoincrement, host varchar not null, port int not null, username varchar not null, password varchar not null, md5 varchar, sha1 varchar);"
 	};
 	
-	private static final String[] DATABASE_TABLES = {
-		"alerts",
-		"servers"
+	private static final String[] DATABASE_UPGRADE_STATEMENTS = {
+		"DROP TABLE IF EXISTS alerts;",
+		DATABASE_CREATE_STATEMENTS[0]
 	};
 
 	private final Context mCtx;
@@ -48,11 +49,9 @@ public class DbAdapter {
 		
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
-			for(String dbTableLocal : DATABASE_TABLES){
-				db.execSQL("DROP TABLE IF EXISTS " + dbTableLocal + ";");
-			}
-			onCreate(db);
+			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
+			for(String dbUpgradeStatement : DATABASE_UPGRADE_STATEMENTS)
+				db.execSQL(dbUpgradeStatement);
 		}
 	}
 	
@@ -142,5 +141,16 @@ public class DbAdapter {
 	    }
 	    return mCursor;
 	
+	}
+	
+	public static String getHex( byte [] raw ) {
+		if ( raw == null ) {
+			return null;
+		}
+		final StringBuilder hex = new StringBuilder( 2 * raw.length );
+		for ( final byte b : raw ) {
+			hex.append(HEXES.charAt((b & 0xF0) >> 4)).append(HEXES.charAt((b & 0x0F)));
+		}
+		return hex.toString();
 	}
 }
