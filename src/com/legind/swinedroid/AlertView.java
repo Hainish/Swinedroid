@@ -43,6 +43,7 @@ import com.legind.swinedroid.xml.XMLHandlerException;
 public class AlertView extends Activity{
 	private Long mRowId;
 	private ProgressDialog pd;
+	private ProgressDialog pdRDNS;
 	private AlertXMLHandler mAlertXMLHandler;
 	private ServerDbAdapter mDbHelper;
 	private long mCid;
@@ -67,7 +68,8 @@ public class AlertView extends Activity{
 	private String mPasswordText;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertView";
 	private boolean mGotAlert;
-	AlertDisplayRunnable alertRunnable;
+	private AlertDisplayRunnable alertRunnable;
+	private ResolveRDNSRunnable resolveRunnable;
 	private static final int ACTIVITY_HASH_DIALOG = 0;
 	private static final String KEY_PROTOCOL = "protocol";
 	private static final String KEY_HOSTNAME = "hostname";
@@ -82,6 +84,10 @@ public class AlertView extends Activity{
 	private static final int PROTO_INFO_TABLE_ID = 3;
 	private static final int PAYLOAD_INFO_TABLE_ID = 4;
 	private static final int COPY_ID = 0;
+	private static final int RDNS_ID = 1;
+	private final int CERT_REJECTED = 0;
+	private final int CERT_ACCEPTED = 1;
+	private Menu alertViewMenu;
 	private ImageView alertIcon;
 	private TextView alertText;
 	private LayoutInflater inflater;
@@ -89,9 +95,9 @@ public class AlertView extends Activity{
 	private RelativeLayout relativeLayout;
 	private ClipboardManager clipboard;
 	private String clipboardText;
-	
+	private TableLayout ipTableLayout;
+    public static Activity A = null;
 	private class AlertDisplayRunnable implements Runnable {
-		private Context mCtx;
 		private final int DOCUMENT_VALID = 0;
 		private final int IO_ERROR = 1;
 		private final int XML_ERROR = 2;
@@ -136,7 +142,7 @@ public class AlertView extends Activity{
 				} else {
 					// construct the GET arguments string, send it to the XML handler
 					String extraArgs = "cid=" + mCid + "&sid=" + mSid;
-					mAlertXMLHandler.createElement(mCtx, mUsernameText, mPasswordText, "alert", extraArgs);
+					mAlertXMLHandler.createElement(mUsernameText, mPasswordText, "alert", extraArgs);
 					handler.sendEmptyMessage(DOCUMENT_VALID);
 				}
 			} catch (IOException e) {
@@ -210,10 +216,42 @@ public class AlertView extends Activity{
 		
 	}
 
+	private class ResolveRDNSRunnable implements Runnable {
+		private String ipSrcRDNS;
+		private String ipDstRDNS;
+		
+		public void run(){
+			ipSrcRDNS = mIpSrc.getHostName();
+			ipDstRDNS = mIpDst.getHostName();
+			handler.sendEmptyMessage(0);
+		}
+		
+		private Handler handler = new Handler(){
+			@Override
+			public void handleMessage(Message msg){
+        		String[] ipLabels = {"Src RDNS", "Dst RDNS"};
+        		String ipSrcRDNSDisplay = ipSrcRDNS.equals(mIpSrc.getHostAddress()) ? "Could Not Resolve" : ipSrcRDNS;
+        		String ipDstRDNSDisplay = ipDstRDNS.equals(mIpDst.getHostAddress()) ? "Could Not Resolve" : ipDstRDNS; 
+				String[] ipValues = {ipSrcRDNSDisplay, ipDstRDNSDisplay};
+				clipboardText = clipboardText.replace("###RDNS###","\nSrc RDNS: " + ipSrcRDNSDisplay + "\nDst RDNS: " + ipDstRDNSDisplay);
+				addRowsToTable(ipLabels, ipValues, ipTableLayout);
+				alertViewMenu.removeItem(RDNS_ID);
+				pdRDNS.dismiss();
+	        	CharSequence text = "RDNS info added to alert overview.";
+	        	int duration = Toast.LENGTH_SHORT;
+	
+	        	Toast toast = Toast.makeText(AlertView.A, text, duration);
+	        	toast.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL, 0, 0);
+	        	toast.show();
+			}
+		};
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		try{
 			super.onCreate(savedInstanceState);
+			A = this;
 	    	// Open up the XML and db handlers
 			mAlertXMLHandler = new AlertXMLHandler();
 			mDbHelper = new ServerDbAdapter(this);
@@ -228,6 +266,7 @@ public class AlertView extends Activity{
 			
 			// create the runnables
 			alertRunnable = new AlertDisplayRunnable();
+			resolveRunnable = new ResolveRDNSRunnable();
 	
 			alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
 			alertText = (TextView) layout.findViewById(R.id.alert_view_sig_name_text);
@@ -327,13 +366,34 @@ public class AlertView extends Activity{
 		outState.putByte(AlertView.KEY_CODE, mCode);
 		outState.putBoolean("mGotAlert", mGotAlert);
 	}
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+		/*
+		 * The ServerHashDialog activity has finished.  if the cert is rejected, finish this activity.
+		 * If accepted, try connecting to the server all over again.
+		 */
+		switch(resultCode){
+			case CERT_REJECTED:
+				finish();
+			break;
+			case CERT_ACCEPTED:
+				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
+				Bundle extras = intent.getExtras();
+				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+				Thread thread = new Thread(alertRunnable);
+				thread.start();
+			break;
+		}
+    }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        MenuItem copyMenuItem = menu.add(0, COPY_ID, 0, R.string.menu_copy_alert);
-        //copyMenuItem.setIcon(R.drawable.ic_menu_refresh);
-        clipboard.setText(clipboardText);
+        alertViewMenu = menu; 
+        menu.add(0, COPY_ID, 0, R.string.menu_copy_alert);
+        menu.add(0, RDNS_ID, 0, R.string.menu_rdns_lookup);
         return true;
     }
 
@@ -341,13 +401,18 @@ public class AlertView extends Activity{
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         switch(item.getItemId()){
         	case COPY_ID:
+                clipboard.setText(clipboardText.replace("###RDNS###", ""));
         		Context context = getApplicationContext();
 	        	CharSequence text = "Alert copied to clipboard.";
 	        	int duration = Toast.LENGTH_SHORT;
-	
 	        	Toast toast = Toast.makeText(context, text, duration);
 	        	toast.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL, 0, 0);
 	        	toast.show();
+        	break;
+        	case RDNS_ID:
+        		pdRDNS = ProgressDialog.show(this, "", "Resolving RDNS...", true);
+        		Thread thread = new Thread(resolveRunnable);
+        		thread.start();
         	break;
         }
         return super.onMenuItemSelected(featureId, item);
@@ -376,11 +441,11 @@ public class AlertView extends Activity{
 		String[] generalValues = {mDate, mTime, mHostname, mInterfaceName};
 		clipboardText += "\n\nDate: " + mDate + "\nTime: " + mTime + "\nSensor Address: " + mHostname + "\nInterface: " + mInterfaceName;
 		addRowsToTable(generalLabels, generalValues, generalTableLayout);
-		
-		TableLayout ipTableLayout = createInfoTable("IP", AlertView.GENERAL_INFO_TABLE_ID, AlertView.IP_INFO_TABLE_ID); 
+
+		ipTableLayout = createInfoTable("IP", AlertView.GENERAL_INFO_TABLE_ID, AlertView.IP_INFO_TABLE_ID); 
 		String[] ipLabels = {"Src Address", "Dst Address"};
 		String[] ipValues = {mIpSrc.getHostAddress(), mIpDst.getHostAddress()};
-		clipboardText += "\n\nIP Layer\nSrc Address: " + mIpSrc.getHostAddress() + "\nDst Address: " + mIpDst.getHostAddress();
+		clipboardText += "\n\nIP Layer\nSrc Address: " + mIpSrc.getHostAddress() + "\nDst Address: " + mIpDst.getHostAddress() + "###RDNS###";
 		addRowsToTable(ipLabels, ipValues, ipTableLayout);
 		String  protocol = null;
 		String[] protocolLabels = null;
@@ -576,7 +641,6 @@ public class AlertView extends Activity{
 				tableLayout.addView(row);
 			}
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			Log.w(LOG_TAG, e.toString());
 		}
 	}

@@ -5,8 +5,6 @@ import java.io.IOException;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
-import android.content.Context;
-
 public class AlertXMLHandler extends XMLHandler{
 	private boolean inProtocol = false;
 	private boolean inAlert = false;
@@ -115,8 +113,8 @@ public class AlertXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(Context ctx, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		alert = new AlertXMLElement();
-		super.createElement(ctx, username, password, call, extra_parameters);
+		super.createElement(username, password, call, extra_parameters);
 	}
 }

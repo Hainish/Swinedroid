@@ -14,7 +14,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.legind.web.WebTransport.WebTransport;
@@ -57,11 +56,11 @@ public class XMLHandler extends DefaultHandler{
 		}
 	}
 	
-	public void createElement(Context ctx, String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
-		createElement(ctx, username, password, call, "");
+	public void createElement(String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
+		createElement(username, password, call, "");
 	}
 	
-	public void createElement(Context ctx, String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		try{
 			String[] webrequest = {
 				"GET /?username=" + username + "&password=" + password + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.0",

@@ -34,4 +34,5 @@
     <string name="menu_search_alerts">Search Alerts</string>
     <string name="menu_view_alerts">View Alerts</string>
     <string name="menu_copy_alert">Copy Alert</string>
+    <string name="menu_rdns_lookup">RDNS Lookup</string>
 </resources>

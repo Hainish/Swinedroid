@@ -285,7 +285,7 @@ public class ServerView extends Activity implements Runnable {
 				msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
 				msg.sendToTarget();
 			} else {
-				mOverviewXMLHandler.createElement(this, mUsernameText, mPasswordText, "overview");
+				mOverviewXMLHandler.createElement(mUsernameText, mPasswordText, "overview");
 				handler.sendEmptyMessage(DOCUMENT_VALID);
 			}
 		} catch (IOException e) {

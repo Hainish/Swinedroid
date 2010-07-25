@@ -67,8 +67,8 @@ public class AlertList extends ListActivity{
     private final int ACTIVITY_VIEW=2;
 	private final int CERT_REJECTED = 0;
 	private final int CERT_ACCEPTED = 1;
-	AlertsDisplayRunnable additionalAlertsRunnable;
-	AlertsDisplayRunnable initialAlertsRunnable;
+	private AlertsDisplayRunnable additionalAlertsRunnable;
+	private AlertsDisplayRunnable initialAlertsRunnable;
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
     public static Activity LA = null;
 	
@@ -101,8 +101,7 @@ public class AlertList extends ListActivity{
 		 * @param ctx the AlertList context from which it is called
 		 * @param fromCode how this runnable is called, either loading the inital alerts or additional alerts
 		 */
-		public AlertsDisplayRunnable(Context ctx, int fromCode){
-			mCtx = ctx;
+		public AlertsDisplayRunnable(int fromCode){
 			mFromCode = fromCode;
 			// Display all errors on the ServerView ListActivity
 			Context errorMessageContext = ServerView.A;
@@ -141,7 +140,7 @@ public class AlertList extends ListActivity{
 				} else {
 					// construct the GET arguments string, send it to the XML handler
 					String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
-					mAlertListXMLHandler.createElement(mCtx, mUsernameText, mPasswordText, "alerts", extraArgs);
+					mAlertListXMLHandler.createElement(mUsernameText, mPasswordText, "alerts", extraArgs);
 					handler.sendEmptyMessage(DOCUMENT_VALID);
 				}
 			} catch (IOException e) {
@@ -260,8 +259,8 @@ public class AlertList extends ListActivity{
 		switcher.addView(progressBar);
 		
 		// create the runnables for creating/expanding the alertsList
-		additionalAlertsRunnable = new AlertsDisplayRunnable(this, ALERTS_ADDITIONAL);
-		initialAlertsRunnable = new AlertsDisplayRunnable(this, ALERTS_INITIAL);
+		additionalAlertsRunnable = new AlertsDisplayRunnable(ALERTS_ADDITIONAL);
+		initialAlertsRunnable = new AlertsDisplayRunnable(ALERTS_INITIAL);
 		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
