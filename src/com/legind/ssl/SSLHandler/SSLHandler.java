@@ -28,6 +28,7 @@ public class SSLHandler {
 	private SSLSocket mSocket;
 	private CustomX509TrustManager trustManager;
 	private X509Certificate mServerCertificate;
+	private final String LOG_TAG = "com.legind.ssl.SSLHandler";
 	
 	public SSLHandler(String host, int port){
         mHost = host;
@@ -49,9 +50,9 @@ public class SSLHandler {
             mIn = new BufferedInputStream(mSocket.getInputStream(), 1024);
             mOut = mSocket.getOutputStream();
 		} catch (NoSuchAlgorithmException e) {
-			Log.e("Swinedroid",e.toString());
+			Log.e(LOG_TAG,e.toString());
 		} catch (KeyManagementException e) {
-			Log.e("Swinedroid",e.toString());
+			Log.e(LOG_TAG,e.toString());
 		}
 	}
 

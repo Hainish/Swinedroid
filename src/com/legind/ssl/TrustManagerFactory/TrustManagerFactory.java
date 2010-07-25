@@ -12,14 +12,10 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import android.app.ListActivity;
-import android.content.Context;
 import android.util.Log;
 
-import com.legind.swinedroid.Swinedroid;
-
 public final class TrustManagerFactory {
-	private static final String LOG_TAG = "TrustManagerFactory";
+	private static final String LOG_TAG = "com.legind.ssl.TrustManagerFactory";
 
 	private static X509TrustManager defaultTrustManager;
 	private static X509TrustManager unsecureTrustManager;

@@ -28,7 +28,7 @@ public class AlertListXMLHandler extends XMLHandler{
 	public long numAlerts;
 	public LinkedList <AlertListXMLElement> alertList;
 	private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private static final String TAG = "AlertListXMLHandler";
+	private static final String LOG_TAG = "com.legind.swinedroid.xml.AlertListXMLHandler";
 	
 	@Override
 	public void startElement(String uri, String name, String qName, Attributes atts){
@@ -120,9 +120,9 @@ public class AlertListXMLHandler extends XMLHandler{
 				alertList.getLast().timestamp = new Timestamp(parsed_date.getTime());
 			}
 		} catch (UnknownHostException e) {
-			Log.w(TAG, e.toString());
+			Log.w(LOG_TAG, e.toString());
 		} catch (ParseException e) {
-			Log.w(TAG, e.toString());
+			Log.w(LOG_TAG, e.toString());
 		}
 	}
 	

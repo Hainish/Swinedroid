@@ -33,4 +33,5 @@
     <string name="sha1">SHA1</string>
     <string name="menu_search_alerts">Search Alerts</string>
     <string name="menu_view_alerts">View Alerts</string>
+    <string name="menu_copy_alert">Copy Alert</string>
 </resources>

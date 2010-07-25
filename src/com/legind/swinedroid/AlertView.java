@@ -17,9 +17,12 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.ClipboardManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -27,6 +30,7 @@ import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.RelativeLayout.LayoutParams;
 
 import com.legind.Dialogs.ErrorMessageHandler;
@@ -77,11 +81,14 @@ public class AlertView extends Activity{
 	private static final int IP_INFO_TABLE_ID = 2;
 	private static final int PROTO_INFO_TABLE_ID = 3;
 	private static final int PAYLOAD_INFO_TABLE_ID = 4;
+	private static final int COPY_ID = 0;
 	private ImageView alertIcon;
 	private TextView alertText;
 	private LayoutInflater inflater;
 	private LinearLayout layout;
 	private RelativeLayout relativeLayout;
+	private ClipboardManager clipboard;
+	private String clipboardText;
 	
 	private class AlertDisplayRunnable implements Runnable {
 		private Context mCtx;
@@ -224,6 +231,8 @@ public class AlertView extends Activity{
 	
 			alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
 			alertText = (TextView) layout.findViewById(R.id.alert_view_sig_name_text);
+			
+			clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
 	
 			if(savedInstanceState != null){
 				// if we have a savedInstanceState, load the strings directly
@@ -318,31 +327,61 @@ public class AlertView extends Activity{
 		outState.putByte(AlertView.KEY_CODE, mCode);
 		outState.putBoolean("mGotAlert", mGotAlert);
 	}
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        MenuItem copyMenuItem = menu.add(0, COPY_ID, 0, R.string.menu_copy_alert);
+        //copyMenuItem.setIcon(R.drawable.ic_menu_refresh);
+        clipboard.setText(clipboardText);
+        return true;
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        switch(item.getItemId()){
+        	case COPY_ID:
+        		Context context = getApplicationContext();
+	        	CharSequence text = "Alert copied to clipboard.";
+	        	int duration = Toast.LENGTH_SHORT;
+	
+	        	Toast toast = Toast.makeText(context, text, duration);
+	        	toast.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL, 0, 0);
+	        	toast.show();
+        	break;
+        }
+        return super.onMenuItemSelected(featureId, item);
+    }
 	
 	protected void fillData(){
+		clipboardText = "Signature Name: " + mSigName + "\nSeverity: ";
+		alertText.setText(mSigName);
 		switch(mSigPriority){
 			case 1:
 				alertIcon.setImageResource(R.drawable.low_large);
+				clipboardText += "Low";
 			break;
 			case 2:
 				alertIcon.setImageResource(R.drawable.warn_large);
+				clipboardText += "Medium";
 			break;
 			case 3:
 				alertIcon.setImageResource(R.drawable.high_large);
+				clipboardText += "High";
 			break;
 		}
-		alertText.setText(mSigName);
 
 		TableLayout generalTableLayout = createInfoTable("General", R.id.alert_view_sig_name_text, AlertView.GENERAL_INFO_TABLE_ID); 
 		String[] generalLabels = {"Date", "Time", "Sensor Address", "Interface"};
 		String[] generalValues = {mDate, mTime, mHostname, mInterfaceName};
+		clipboardText += "\n\nDate: " + mDate + "\nTime: " + mTime + "\nSensor Address: " + mHostname + "\nInterface: " + mInterfaceName;
 		addRowsToTable(generalLabels, generalValues, generalTableLayout);
 		
 		TableLayout ipTableLayout = createInfoTable("IP", AlertView.GENERAL_INFO_TABLE_ID, AlertView.IP_INFO_TABLE_ID); 
 		String[] ipLabels = {"Src Address", "Dst Address"};
 		String[] ipValues = {mIpSrc.getHostAddress(), mIpDst.getHostAddress()};
+		clipboardText += "\n\nIP Layer\nSrc Address: " + mIpSrc.getHostAddress() + "\nDst Address: " + mIpDst.getHostAddress();
 		addRowsToTable(ipLabels, ipValues, ipTableLayout);
-		Log.w("STRINNNG",Integer.toString(mProtocol));
 		String  protocol = null;
 		String[] protocolLabels = null;
 		String[] protocolValues = null;
@@ -415,16 +454,19 @@ public class AlertView extends Activity{
 				}
 				protocolLabels = new String[]{"Type", "Code"};
 				protocolValues = new String[]{String.valueOf(mType) + (typeString.length() > 0 ? " (" + typeString + ")" : ""), String.valueOf(mCode) + (codeString.length() > 0 ? " (" + codeString + ")" : "")};
+				clipboardText += "\n\nICMP Layer\nType: " + String.valueOf(mType) + (typeString.length() > 0 ? " (" + typeString + ")" : "") + "\nCode: " + String.valueOf(mCode) + (codeString.length() > 0 ? " (" + codeString + ")" : "");
 			break;
 			case AlertXMLHandler.PROTO_TCP:
 				protocol = "TCP";
 				protocolLabels = new String[]{"Src Port", "Dst Port"};
 				protocolValues = new String[]{String.valueOf(mSport), String.valueOf(mDport)};
+				clipboardText += "\n\nTCP Layer\nSrc Port: " + String.valueOf(mSport) + "\nDst Port: " + String.valueOf(mDport);
 			break;
 			case AlertXMLHandler.PROTO_UDP:
 				protocol = "UDP";
 				protocolLabels = new String[]{"Src Port", "Dst Port"};
 				protocolValues = new String[]{String.valueOf(mSport), String.valueOf(mDport)};
+				clipboardText += "\n\nUDP Layer\nSrc Port: " + String.valueOf(mSport) + "\nDst Port: " + String.valueOf(mDport);
 			break;
 		}
 		if(protocol != null){
@@ -493,6 +535,8 @@ public class AlertView extends Activity{
 			byte[] asciiBytes = new BigInteger(hexString, 16).toByteArray();
 			String asciiString;
 			asciiString = new String(asciiBytes, "US-ASCII");
+			clipboardText += "\n\nPayload (Hex):\n" + hexString;
+			clipboardText += "\n\nPayload (ASCII):\n" + asciiString;
 			int positionTracker = 0;
 			TableRow row = null;
 			TableRow.LayoutParams paramsCell[] = new TableRow.LayoutParams[12];

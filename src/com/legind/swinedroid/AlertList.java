@@ -482,7 +482,6 @@ public class AlertList extends ListActivity{
     protected void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
         AlertListTracker tracker = AlertListTracker.get((int)id);
-        Log.w("", Long.toString(tracker.cid) + " " + Long.toString(tracker.sid));
         Intent i = new Intent(this, AlertView.class);
 
     	i.putExtra(AlertDbAdapter.KEY_ROWID, mRowId);

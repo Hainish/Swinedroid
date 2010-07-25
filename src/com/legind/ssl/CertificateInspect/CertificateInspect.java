@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import android.util.Log;
 
 public class CertificateInspect{
-	private final String LOG_TAG = "CertificateInspect";
+	private final String LOG_TAG = "com.legind.ssl.CertificateInspect";
 	private final byte[] encodingTable = {
 		(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7',
 		(byte)'8', (byte)'9', (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f'
