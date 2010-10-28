@@ -11,7 +11,9 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -86,7 +88,7 @@ public class ServerView extends Activity implements Runnable {
 		setContentView(R.layout.server_view);
 
 		// Display all errors on the Swinedroid ListActivity
-		mEMH = new ErrorMessageHandler(Swinedroid.LA,
+		mEMH = new ErrorMessageHandler(this,
 				findViewById(R.id.server_edit_error_layout_root));
 
 		mServerViewTitleText = (TextView) findViewById(R.id.server_view_title);
@@ -309,15 +311,22 @@ public class ServerView extends Activity implements Runnable {
 		@Override
 		public void handleMessage(Message message) {
 			pd.dismiss();
+			OnCancelListener cancelListener = new OnCancelListener() {
+				public void onCancel(DialogInterface dialog) {
+					mDbHelper.close();
+					finish();
+					return;
+				}
+			};
 			switch(message.what){
 				case IO_ERROR:
-					mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+					mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
 				break;
 				case XML_ERROR:
-					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
+					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
 				break;
 				case SERVER_ERROR:
-					mEMH.DisplayErrorMessage((String) message.obj);
+					mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
 				break;
 				case CERT_ERROR:
 					/*
@@ -355,10 +364,6 @@ public class ServerView extends Activity implements Runnable {
 					mOverviewXMLHandler.alertChart.setXAxisString("Date");
 					alertLinearLayout.addView(mOverviewXMLHandler.alertChart.execute(ServerView.A));
 				break;
-			}
-			if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
-				mDbHelper.close();
-				finish();
 			}
 
 		}

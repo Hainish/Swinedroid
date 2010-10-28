@@ -16,8 +16,9 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -70,6 +71,7 @@ public class AlertList extends ListActivity{
 	private AlertsDisplayRunnable additionalAlertsRunnable;
 	private AlertsDisplayRunnable initialAlertsRunnable;
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
+	private ErrorMessageHandler mEMH;
     public static Activity LA = null;
 	
 	public class AlertListTracker extends Object {
@@ -84,14 +86,12 @@ public class AlertList extends ListActivity{
 	}
 	
 	private class AlertsDisplayRunnable implements Runnable {
-		private Context mCtx;
 		private int mFromCode;
 		private final int DOCUMENT_VALID = 0;
 		private final int IO_ERROR = 1;
 		private final int XML_ERROR = 2;
 		private final int SERVER_ERROR = 3;
 		private final int CERT_ERROR = 4;
-		private ErrorMessageHandler mEMH;
 		
 		
 
@@ -103,16 +103,6 @@ public class AlertList extends ListActivity{
 		 */
 		public AlertsDisplayRunnable(int fromCode){
 			mFromCode = fromCode;
-			// Display all errors on the ServerView ListActivity
-			Context errorMessageContext = ServerView.A;
-			switch(mFromCode){
-				case ALERTS_ADDITIONAL:
-					// Display all errors on the AlertList ListActivity
-					errorMessageContext = mCtx;
-				break;
-			}
-			mEMH = new ErrorMessageHandler(errorMessageContext,
-					findViewById(R.id.server_edit_error_layout_root));
 		}
 		
 		/**
@@ -176,15 +166,25 @@ public class AlertList extends ListActivity{
 						switcher.showPrevious();
 					break;
 				}
+				OnCancelListener cancelListener = new OnCancelListener() {
+					public void onCancel(DialogInterface dialog) {
+						switch(mFromCode){
+							case ALERTS_INITIAL:
+								finish();
+							break;
+						}
+						return;
+					}
+				};
 				switch(message.what){
 					case IO_ERROR:
-						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
 					break;
 					case XML_ERROR:
-						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
+						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
 					break;
 					case SERVER_ERROR:
-						mEMH.DisplayErrorMessage((String) message.obj);
+						mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
 					break;
 					case CERT_ERROR:
 						/*
@@ -223,13 +223,6 @@ public class AlertList extends ListActivity{
 						}
 					break;
 				}
-				if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
-					switch(mFromCode){
-						case ALERTS_INITIAL:
-							finish();
-						break;
-					}
-				}
 
 			}
 		};
@@ -250,6 +243,9 @@ public class AlertList extends ListActivity{
 		mGotAlerts = false;
 		mNumAlertsDisplayed = 0;
 		mNumAlertsTotal = 0;
+		
+		mEMH = new ErrorMessageHandler(AlertList.LA,
+				findViewById(R.id.server_edit_error_layout_root));
 		
 		// create the ViewSwitcher in the current context, create the views and add them to the switcher 
 		switcher = new ViewSwitcher(this);

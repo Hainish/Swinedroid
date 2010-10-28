@@ -11,7 +11,9 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -97,26 +99,17 @@ public class AlertView extends Activity{
 	private String clipboardText;
 	private TableLayout ipTableLayout;
     public static Activity A = null;
+    private ErrorMessageHandler mEMH;
 	private class AlertDisplayRunnable implements Runnable {
 		private final int DOCUMENT_VALID = 0;
 		private final int IO_ERROR = 1;
 		private final int XML_ERROR = 2;
 		private final int SERVER_ERROR = 3;
 		private final int CERT_ERROR = 4;
-		private ErrorMessageHandler mEMH;
-		
-		
 
 		/**
 		 * Constructor for AlertDisplayRunnable.  Runnable becomes context-aware
 		 */
-		public AlertDisplayRunnable(){
-			// Display all errors on the AlertList ListActivity
-			Context errorMessageContext = AlertList.LA;
-			mEMH = new ErrorMessageHandler(errorMessageContext,
-					findViewById(R.id.server_edit_error_layout_root));
-		}
-		
 		/**
 		 * Send an XML request to the XML handler.  If an error occurs, send a message
 		 * to the handler with the appropriate error code
@@ -171,15 +164,22 @@ public class AlertView extends Activity{
 				 * and show the previous view for the switcher for additional alerts.
 				 */
 				pd.dismiss();
+				OnCancelListener cancelListener = new OnCancelListener() {
+					public void onCancel(DialogInterface dialog) {
+						mDbHelper.close();
+						finish();
+						return;
+					}
+				};
 				switch(message.what){
 					case IO_ERROR:
-						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.");
+						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
 					break;
 					case XML_ERROR:
-						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.");
+						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
 					break;
 					case SERVER_ERROR:
-						mEMH.DisplayErrorMessage((String) message.obj);
+						mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
 					break;
 					case CERT_ERROR:
 						/*
@@ -206,9 +206,6 @@ public class AlertView extends Activity{
 						mCode = mAlertXMLHandler.alert.code;
 						fillData();
 					break;
-				}
-				if(message.what != DOCUMENT_VALID && message.what != CERT_ERROR){
-					finish();
 				}
 
 			}
@@ -259,6 +256,8 @@ public class AlertView extends Activity{
 			inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			layout = (LinearLayout) inflater.inflate(R.layout.alert_view, (ViewGroup) findViewById(R.id.alert_view_layout_root));
 			relativeLayout = (RelativeLayout) layout.findViewById(R.id.alert_view_relative_layout);
+			mEMH = new ErrorMessageHandler(this,
+					findViewById(R.id.server_edit_error_layout_root));
 			setContentView(layout);
 			
 			// initial value of mGotAlert is false

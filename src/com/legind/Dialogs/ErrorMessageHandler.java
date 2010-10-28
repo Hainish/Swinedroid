@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,8 +24,8 @@ public class ErrorMessageHandler extends MessageHandler{
 	public ErrorMessageHandler(View v){
 		super(v);
 	}
-
-	public void DisplayErrorMessage(String message) {
+	
+	public void DisplayErrorMessage(String message, OnCancelListener cancelListener){
 		final Builder builder;
 		Dialog alertDialog;
 
@@ -34,7 +35,6 @@ public class ErrorMessageHandler extends MessageHandler{
 				return;
 			}
 		};
-		
 		LayoutInflater inflater = (LayoutInflater) mCtx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View layout = inflater.inflate(R.layout.server_edit_error,
 				((ViewGroup) mV));
@@ -48,8 +48,17 @@ public class ErrorMessageHandler extends MessageHandler{
 		builder = new AlertDialog.Builder(mCtx);
 		builder.setView(layout);
 		builder.setPositiveButton("Ok", okListener);
+		builder.setOnCancelListener(cancelListener);
 		alertDialog = builder.create();
 		alertDialog.show();
+	}
 
+	public void DisplayErrorMessage(String message) {
+		OnCancelListener cancelListener = new OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {
+				return;
+			}
+		};
+		DisplayErrorMessage(message, cancelListener);
 	}
 }
