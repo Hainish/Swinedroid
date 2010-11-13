@@ -16,6 +16,7 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.DialogInterface.OnCancelListener;
@@ -24,11 +25,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.ViewSwitcher;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
@@ -73,6 +79,8 @@ public class AlertList extends ListActivity{
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
 	private ErrorMessageHandler mEMH;
     public static Activity LA = null;
+    private static final int VIEW_ID = Menu.FIRST;
+    private static final int DELETE_ID = Menu.FIRST + 1;
 	
 	public class AlertListTracker extends Object {
 		public long sid;
@@ -311,6 +319,28 @@ public class AlertList extends ListActivity{
 	    	fillData();
 		}
 	}
+	
+    @Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+        menu.add(0, VIEW_ID, 0, R.string.menu_delete_alert);
+        menu.add(0, DELETE_ID, 1, R.string.menu_delete_alert);
+	}
+
+    @Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+		switch(item.getItemId()) {
+    	case DELETE_ID:
+			Context context = getApplicationContext();
+			CharSequence text = Long.toString(info.id);
+	        AlertListTracker tracker = AlertListTracker.get((int)info.id);
+			Thread additionalAlertsThread = new Thread(additionalAlertsRunnable);
+			additionalAlertsThread.start();
+	        return true;
+		}
+		return super.onContextItemSelected(item);
+	}
     
 	@Override
 	protected void onDestroy() {
@@ -424,6 +454,7 @@ public class AlertList extends ListActivity{
 	    		getListView().addFooterView(switcher);
 			alertListAdapter = new SimpleAdapter(this, list, R.layout.alert_row, new String[] {"icon", "sig_name", "ip_src", "ip_dst", "timestamp_date", "timestamp_time"}, new int[] {R.id.alert_row_icon, R.id.alert_row_sig_name_text, R.id.alert_row_ip_src_text, R.id.alert_row_ip_dst_text, R.id.alert_row_date_text, R.id.alert_row_time_text});
 			setListAdapter(alertListAdapter);
+	    	registerForContextMenu(getListView());
 		} catch (UnknownHostException e) {
 			Log.w(LOG_TAG,e.toString());
 		}

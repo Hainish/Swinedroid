@@ -3,6 +3,7 @@
     <string name="app_name">Swinedroid</string>
     <string name="menu_insert">Add Server</string>
     <string name="menu_delete">Delete Server</string>
+    <string name="menu_delete_alert">Delete Alert</string>
     <string name="menu_edit">Edit Server</string>
     <string name="host">Host</string>
     <string name="port">Port</string>
