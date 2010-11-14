@@ -13,12 +13,12 @@ public class WebTransportConnection{
 	private WebTransport parent;
 	private SSLHandler sslhandler;
 	private ArrayList<String> lastHeaders;
-	private ArrayList<String> lastDocument;
+	private String lastDocument;
 	private X509Certificate serverCertificate;
 	
 	public WebTransportConnection(WebTransport webtransport){
 		lastHeaders = new ArrayList<String>();
-		lastDocument = new ArrayList<String>();
+		lastDocument = new String();
 		parent = webtransport;
 	}
 	
@@ -79,9 +79,14 @@ public class WebTransportConnection{
 	}
 	
 	public void handleDocument() throws IOException{
-		String line;
-		while((line = sslhandler.readLine()) != null){
-			lastDocument.add(line);
+		if(!lastHeaders.isEmpty()){
+			for(String header : lastHeaders){
+				if(header.contains("Content-Length: ")){
+					// Pass the Content-Length so readBuffer knows when to stop reading 
+					lastDocument = sslhandler.readBuffer(Integer.parseInt(header.replace("Content-Length: ", "")));
+				}
+			}
+		} else {
 		}
 	}
 	
@@ -89,7 +94,7 @@ public class WebTransportConnection{
 		return lastHeaders;
 	}
 	
-	public ArrayList<String> getLastDocument(){
+	public String getLastDocument(){
 		return lastDocument;
 	}
 	

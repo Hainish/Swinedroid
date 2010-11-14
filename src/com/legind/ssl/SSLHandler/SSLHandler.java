@@ -76,6 +76,17 @@ public class SSLHandler {
         mOut = null;
         mSocket = null;
     }
+    
+    // Read a buffer given a length and pass back a string
+    public String readBuffer(int length) throws IOException{
+        StringBuffer sb = new StringBuffer();
+        int d;
+        for(int i = 0; i < length && (d = mIn.read()) != -1; i++){
+        	sb.append((char)d);
+        }
+        String ret = sb.toString();
+        return ret;
+    }
 
     public String readLine() throws IOException {
         StringBuffer sb = new StringBuffer();

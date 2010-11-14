@@ -1,6 +1,7 @@
 package com.legind.swinedroid.xml;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.security.KeyManagementException;
 
@@ -26,6 +27,8 @@ public class XMLHandler extends DefaultHandler{
 	private boolean inError = false;
 	private String errorString = null;
 	private WebTransportConnection webtransportconnection;
+	private String mHost;
+	private int mPort;
 	
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		if(name.trim().equals("error"))
@@ -63,16 +66,17 @@ public class XMLHandler extends DefaultHandler{
 	public void createElement(String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		try{
 			String[] webrequest = {
-				"GET /?username=" + username + "&password=" + password + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.0",
-				"User-Agent: Swinedroid"};
+				"GET /?username=" + username + "&password=" + password + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.1",
+				"Host: " + mHost + ":" + Integer.toString(mPort), "User-Agent: Swinedroid","Keep-Alive: 300","Connection: keep-alive"};
 			webtransportconnection.sendRequest(webrequest);
 			webtransportconnection.handleHeaders();
-			
+			webtransportconnection.handleDocument();
+			String xmlString = webtransportconnection.getLastDocument();
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();
 			XMLReader xr = sp.getXMLReader();
 			xr.setContentHandler(this);
-			xr.parse(new InputSource(webtransportconnection.getInputStream()));
+			xr.parse(new InputSource(new StringReader(xmlString)));
 			if(errorString != null){
 				 throw new XMLHandlerException(errorString);
 			}
