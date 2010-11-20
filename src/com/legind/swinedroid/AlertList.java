@@ -16,13 +16,16 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -39,7 +42,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.ssl.CertificateInspect.CertificateInspect;
+import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
@@ -50,10 +53,6 @@ public class AlertList extends ListActivity{
 	private String mSearchTerm;
 	private String mBeginningDatetime;
 	private String mEndingDatetime;
-	private int mPortInt;
-	private String mHostText;
-	private String mUsernameText;
-	private String mPasswordText;
 	private AlertListXMLHandler mAlertListXMLHandler;
 	private ProgressDialog pd;
 	private ServerDbAdapter mDbHelper;
@@ -92,6 +91,17 @@ public class AlertList extends ListActivity{
 		public String timestamp_time;
 		public byte sig_priority;
 	}
+    
+	private Request mBoundRequest;
+	private ServiceConnection mConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName className, IBinder service) {
+		    mBoundRequest = ((Request.RequestBinder)service).getService();
+		}
+		
+		public void onServiceDisconnected(ComponentName className) {
+			mBoundRequest = null;
+		}
+	};
 	
 	private class AlertsDisplayRunnable implements Runnable {
 		private int mFromCode;
@@ -119,26 +129,12 @@ public class AlertList extends ListActivity{
 		 */
 		public void run() {
 			try {
-				Cursor server = mDbHelper.fetch(mRowId);
-				startManagingCursor(server);
-				String mMD5 = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-				String mSHA1 = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
-				mAlertListXMLHandler.openWebTransportConnection(mHostText, mPortInt);
-				CertificateInspect serverCertificateInspect = new CertificateInspect(mAlertListXMLHandler.getWebTransportConnection().getServerCertificate());
-				String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
-				String mServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
-				if(!mServerCertSHA1.equals(mSHA1) || !mServerCertMD5.equals(mMD5)){
-					Message msg = Message.obtain();
-					msg.setTarget(handler);
-					msg.what = CERT_ERROR;
-					msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
-					msg.sendToTarget();
+				mBoundRequest.openWebTransportConnection();
+				if(!mBoundRequest.inspectCertificate()){
+					handler.sendEmptyMessage(CERT_ERROR);
 				} else {
-					// construct the GET arguments string, send it to the XML handler
 					String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
-					mAlertListXMLHandler.createElement(mUsernameText, mPasswordText, "alerts", extraArgs);
+					mAlertListXMLHandler.createElement(mBoundRequest, "alerts", extraArgs);
 					handler.sendEmptyMessage(DOCUMENT_VALID);
 				}
 			} catch (IOException e) {
@@ -200,11 +196,10 @@ public class AlertList extends ListActivity{
 						 */
 						// must set this to true, in case onPause happens for child activity
 						mGotAlerts = true;
-						Object[] messageObject = (Object[]) message.obj;
 			        	Intent i = new Intent(AlertList.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", (String) messageObject[0]);
-			        	i.putExtra("MD5", (String) messageObject[1]);
-			        	i.putExtra("CERT_INVALID", (Boolean) messageObject[2]);
+			        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
+			        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
+			        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
 						switch(mFromCode){
 							case ALERTS_INITIAL:
 								startActivityForResult(i, ACTIVITY_HASH_DIALOG_INITIAL);
@@ -296,19 +291,8 @@ public class AlertList extends ListActivity{
 				mEndingDatetime = extras.getInt("mEndYear") != 0 ? String.format("%04d", extras.getInt("mEndYear")) + "-" + String.format("%02d", extras.getInt("mEndMonth") + 1) + "-" + String.format("%02d", extras.getInt("mEndDay")) + "%20" + String.format("%02d", extras.getInt("mEndHour")) + ":" + String.format("%02d", extras.getInt("mEndMinute")) : null;
 			}
 		}
-
-		if (mRowId != null) {
-			Cursor server = mDbHelper.fetch(mRowId);
-			startManagingCursor(server);
-			mHostText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
-			mPortInt = server.getInt(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT));
-			mUsernameText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
-			mPasswordText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-		}
+		
+		startRequestService();
 
 		if(!mGotAlerts){
 			// Display the progress dialog first
@@ -346,6 +330,8 @@ public class AlertList extends ListActivity{
 	protected void onDestroy() {
 		mDbHelper.close();
 		mAlertDbHelper.close();
+		if(mBoundRequest != null)
+			unbindService(mConnection);
 		super.onDestroy();
 	}
 
@@ -403,6 +389,13 @@ public class AlertList extends ListActivity{
         	break;
         }
     }
+    
+	private void startRequestService() {
+        Intent newinIntent = new Intent(this, Request.class);
+        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
+        startService(newinIntent);
+        bindService(newinIntent, mConnection, 0);
+	}
 
 	private void fillData() {
 		try{

@@ -163,4 +163,9 @@ public class SSLHandler {
     public OutputStream getOutputStream(){
     	return mOut;
     }
+    
+    public Boolean isConnected(){
+    	return mSocket.isConnected();
+    }
+    
 }

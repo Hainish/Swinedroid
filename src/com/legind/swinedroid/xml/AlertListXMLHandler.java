@@ -12,6 +12,8 @@ import java.util.LinkedList;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
+import com.legind.swinedroid.RequestService.Request;
+
 import android.util.Log;
 
 public class AlertListXMLHandler extends XMLHandler{
@@ -126,8 +128,8 @@ public class AlertListXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		alertList = new LinkedList<AlertListXMLElement>();
-		super.createElement(username, password, call, extra_parameters);
+		super.createElement(request, call, extra_parameters);
 	}
 }

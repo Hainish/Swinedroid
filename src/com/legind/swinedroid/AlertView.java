@@ -10,14 +10,16 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.text.ClipboardManager;
 import android.util.Log;
@@ -38,7 +40,7 @@ import android.widget.RelativeLayout.LayoutParams;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.ssl.CertificateInspect.CertificateInspect;
+import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.AlertXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -64,10 +66,6 @@ public class AlertView extends Activity{
 	private int mDport;
 	private byte mType;
 	private byte mCode;
-	private String mHostText;
-	private int mPortInt;
-	private String mUsernameText;
-	private String mPasswordText;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertView";
 	private boolean mGotAlert;
 	private AlertDisplayRunnable alertRunnable;
@@ -100,6 +98,18 @@ public class AlertView extends Activity{
 	private TableLayout ipTableLayout;
     public static Activity A = null;
     private ErrorMessageHandler mEMH;
+    
+	private Request mBoundRequest;
+	private ServiceConnection mConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName className, IBinder service) {
+		    mBoundRequest = ((Request.RequestBinder)service).getService();
+		}
+		
+		public void onServiceDisconnected(ComponentName className) {
+			mBoundRequest = null;
+		}
+	};
+	
 	private class AlertDisplayRunnable implements Runnable {
 		private final int DOCUMENT_VALID = 0;
 		private final int IO_ERROR = 1;
@@ -116,26 +126,13 @@ public class AlertView extends Activity{
 		 */
 		public void run() {
 			try {
-				Cursor server = mDbHelper.fetch(mRowId);
-				startManagingCursor(server);
-				String mMD5 = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-				String mSHA1 = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
-				mAlertXMLHandler.openWebTransportConnection(mHostText, mPortInt);
-				CertificateInspect serverCertificateInspect = new CertificateInspect(mAlertXMLHandler.getWebTransportConnection().getServerCertificate());
-				String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
-				String mServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
-				if(!mServerCertSHA1.equals(mSHA1) || !mServerCertMD5.equals(mMD5)){
-					Message msg = Message.obtain();
-					msg.setTarget(handler);
-					msg.what = CERT_ERROR;
-					msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
-					msg.sendToTarget();
+				mBoundRequest.openWebTransportConnection();
+				if(!mBoundRequest.inspectCertificate()){
+					handler.sendEmptyMessage(CERT_ERROR);
 				} else {
 					// construct the GET arguments string, send it to the XML handler
 					String extraArgs = "cid=" + mCid + "&sid=" + mSid;
-					mAlertXMLHandler.createElement(mUsernameText, mPasswordText, "alert", extraArgs);
+					mAlertXMLHandler.createElement(mBoundRequest, "alert", extraArgs);
 					handler.sendEmptyMessage(DOCUMENT_VALID);
 				}
 			} catch (IOException e) {
@@ -187,11 +184,10 @@ public class AlertView extends Activity{
 						 */
 						// must set this to true, in case onPause happens for child activity
 						mGotAlert = true;
-						Object[] messageObject = (Object[]) message.obj;
 			        	Intent i = new Intent(AlertView.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", (String) messageObject[0]);
-			        	i.putExtra("MD5", (String) messageObject[1]);
-			        	i.putExtra("CERT_INVALID", (Boolean) messageObject[2]);
+			        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
+			        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
+			        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
 						startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 					break;
 					case DOCUMENT_VALID:
@@ -307,19 +303,8 @@ public class AlertView extends Activity{
 					mSigPriority = extras.getByte(AlertDbAdapter.KEY_SIG_PRIORITY);
 				}
 			}
-	
-			if (mRowId != null) {
-				Cursor server = mDbHelper.fetch(mRowId);
-				startManagingCursor(server);
-				mHostText = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
-				mPortInt = server.getInt(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT));
-				mUsernameText = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
-				mPasswordText = server.getString(server
-						.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-			}
+			
+			startRequestService();
 	
 			if(!mGotAlert){
 				// Display the progress dialog first
@@ -337,6 +322,8 @@ public class AlertView extends Activity{
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
+		if(mBoundRequest != null)
+			unbindService(mConnection);
 		super.onDestroy();
 	}
 
@@ -386,6 +373,13 @@ public class AlertView extends Activity{
 			break;
 		}
     }
+    
+	private void startRequestService() {
+        Intent newinIntent = new Intent(this, Request.class);
+        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
+        startService(newinIntent);
+        bindService(newinIntent, mConnection, 0);
+	}
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

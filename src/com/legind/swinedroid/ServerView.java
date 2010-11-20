@@ -11,12 +11,14 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
@@ -27,7 +29,7 @@ import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.ssl.CertificateInspect.CertificateInspect;
+import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 
@@ -51,10 +53,6 @@ public class ServerView extends Activity implements Runnable {
 	private boolean mPausedForCertificate;
 	private Long mRowId;
 	private OverviewXMLHandler mOverviewXMLHandler;
-	private int mPortInt;
-	private String mHostText;
-	private String mUsernameText;
-	private String mPasswordText;
 	private ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
 	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
@@ -72,6 +70,25 @@ public class ServerView extends Activity implements Runnable {
 	private static final int VIEW_ID = 2;
 	private static final int SEARCH_ID = 3;
     public static Activity A = null;
+    
+	private Request mBoundRequest;
+	private ServiceConnection mConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName className, IBinder service) {
+		    mBoundRequest = ((Request.RequestBinder)service).getService();
+			mServerViewTitleText.setText(mBoundRequest.getCurrentHost() + " Severity Statistics");
+			
+			if(!mGotStatistics){
+				// Display the progress dialog first
+				pd = ProgressDialog.show(ServerView.this, "", "Connecting. Please wait...", true);
+				Thread thread = new Thread(ServerView.this);
+				thread.start();
+			}
+		}
+		
+		public void onServiceDisconnected(ComponentName className) {
+			mBoundRequest = null;
+		}
+	};
 
 
 	@Override
@@ -141,32 +158,15 @@ public class ServerView extends Activity implements Runnable {
 			mRowId = extras != null ? extras.getLong(ServerDbAdapter.KEY_ROWID)
 					: null;
 		}
-
-		if (mRowId != null) {
-			Cursor server = mDbHelper.fetch(mRowId);
-			startManagingCursor(server);
-			mHostText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_HOST));
-			mPortInt = server.getInt(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PORT));
-			mUsernameText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
-			mPasswordText = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-		}
 		
-		mServerViewTitleText.setText(mHostText + " Severity Statistics");
-		if(!mGotStatistics){
-			// Display the progress dialog first
-			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-			Thread thread = new Thread(this);
-			thread.start();
-		}
+		startRequestService();
 	}
     
 	@Override
 	protected void onDestroy() {
 		mDbHelper.close();
+		if(mBoundRequest != null)
+			unbindService(mConnection);
 		super.onDestroy();
 	}
     
@@ -268,26 +268,20 @@ public class ServerView extends Activity implements Runnable {
         }
     }
     
+	private void startRequestService() {
+        Intent newinIntent = new Intent(this, Request.class);
+        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
+        startService(newinIntent);
+        bindService(newinIntent, mConnection, 0);
+	}
+    
 	public void run() {
 		try {
-			Cursor server = mDbHelper.fetch(mRowId);
-			startManagingCursor(server);
-			String mMD5 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-			String mSHA1 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
-			mOverviewXMLHandler.openWebTransportConnection(mHostText, mPortInt);
-			CertificateInspect serverCertificateInspect = new CertificateInspect(mOverviewXMLHandler.getWebTransportConnection().getServerCertificate());
-			String mServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
-			String mServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
-			if(!mServerCertSHA1.equals(mSHA1) || !mServerCertMD5.equals(mMD5)){
-				Message msg = Message.obtain();
-				msg.setTarget(handler);
-				msg.what = CERT_ERROR;
-				msg.obj = new Object[]{mServerCertSHA1, mServerCertMD5, (mSHA1 == null && mMD5 == null ? false : true)};
-				msg.sendToTarget();
+			mBoundRequest.openWebTransportConnection();
+			if(!mBoundRequest.inspectCertificate()){
+				handler.sendEmptyMessage(CERT_ERROR);
 			} else {
-				mOverviewXMLHandler.createElement(mUsernameText, mPasswordText, "overview");
+				mOverviewXMLHandler.createElement(mBoundRequest, "overview");
 				handler.sendEmptyMessage(DOCUMENT_VALID);
 			}
 		} catch (IOException e) {
@@ -334,11 +328,11 @@ public class ServerView extends Activity implements Runnable {
 					 */
 					// must set this to true, in case onPause happens for child activity
 					mPausedForCertificate = true;
-					Object[] messageObject = (Object[]) message.obj;
+					//mBoundRequest.displayCertificateDialog(ServerView.this);
 		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
-		        	i.putExtra("SHA1", (String) messageObject[0]);
-		        	i.putExtra("MD5", (String) messageObject[1]);
-		        	i.putExtra("CERT_INVALID", (Boolean) messageObject[2]);
+		        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
+		        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
+		        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
 		        	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 				break;
 				case DOCUMENT_VALID:

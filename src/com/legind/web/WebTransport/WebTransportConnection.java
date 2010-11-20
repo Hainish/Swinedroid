@@ -28,8 +28,6 @@ public class WebTransportConnection{
 			sslhandler = new SSLHandler(parent.getHost(), parent.getPort());
 			sslhandler.open();
 			serverCertificate = sslhandler.getServerCertificate();
-		} else {
-			/* TODO: Handle non-SSL connections as well */
 		}
 	}
 	
@@ -51,8 +49,6 @@ public class WebTransportConnection{
 					sslhandler.writeLine(requestLine);
 				}
 				sslhandler.writeLine("");
-			} else {
-				/* TODO: Handle non-SSL connections as well */
 			}
 		} catch (IOException e){
 			throw new IOException(e.toString());
@@ -73,8 +69,6 @@ public class WebTransportConnection{
 				if(line.trim() != "")
 					lastHeaders.add(line.trim());
 			} while(line.trim() != "");
-		} else {
-			/* TODO: Handle non-SSL connections as well */
 		}
 	}
 	
@@ -90,6 +84,10 @@ public class WebTransportConnection{
 		}
 	}
 	
+	public Boolean isConnected(){
+		return (sslhandler != null && sslhandler.isConnected());
+	}
+	
 	public ArrayList<String> getLastHeaders(){
 		return lastHeaders;
 	}
@@ -101,8 +99,6 @@ public class WebTransportConnection{
 	public BufferedInputStream getInputStream(){
 		if(parent.getSsl()){
 			return sslhandler.getInputStream();
-		} else {
-			/* TODO: Handle non-SSL connections as well */
 		}
 		return null;
 	}
@@ -110,8 +106,6 @@ public class WebTransportConnection{
 	public OutputStream getOutputStream(){
 		if(parent.getSsl()){
 			return sslhandler.getOutputStream();
-		} else {
-			/* TODO: Handle non-SSL connections as well */
 		}
 		return null;
 	}

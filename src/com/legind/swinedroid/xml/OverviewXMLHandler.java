@@ -6,6 +6,8 @@ import org.achartengine.chartlib.AlertChart;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
+import com.legind.swinedroid.RequestService.Request;
+
 public class OverviewXMLHandler extends XMLHandler{
 	private boolean in_all_time = false;
 	private boolean in_last_72 = false;
@@ -114,8 +116,8 @@ public class OverviewXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(String username, String password, String call) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException{
 		alertChart = new AlertChart();
-		super.createElement(username, password, call);
+		super.createElement(request, call);
 	}
 }

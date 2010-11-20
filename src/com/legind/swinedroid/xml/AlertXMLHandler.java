@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
+import com.legind.swinedroid.RequestService.Request;
+
 public class AlertXMLHandler extends XMLHandler{
 	private boolean inProtocol = false;
 	private boolean inAlert = false;
@@ -113,8 +115,8 @@ public class AlertXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(String username, String password, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
 		alert = new AlertXMLElement();
-		super.createElement(username, password, call, extra_parameters);
+		super.createElement(request, call, extra_parameters);
 	}
 }
