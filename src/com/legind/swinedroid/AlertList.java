@@ -96,6 +96,15 @@ public class AlertList extends ListActivity{
 	private ServiceConnection mConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
 		    mBoundRequest = ((Request.RequestBinder)service).getService();
+
+			if(!mGotAlerts){
+				// Display the progress dialog first
+				pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
+				Thread thread = new Thread(initialAlertsRunnable);
+				thread.start();
+			} else {
+		    	fillData();
+			}
 		}
 		
 		public void onServiceDisconnected(ComponentName className) {
@@ -293,15 +302,6 @@ public class AlertList extends ListActivity{
 		}
 		
 		startRequestService();
-
-		if(!mGotAlerts){
-			// Display the progress dialog first
-			pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-			Thread thread = new Thread(initialAlertsRunnable);
-			thread.start();
-		} else {
-	    	fillData();
-		}
 	}
 	
     @Override

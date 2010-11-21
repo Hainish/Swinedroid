@@ -17,8 +17,8 @@ public class WebTransportConnection{
 	private X509Certificate serverCertificate;
 	
 	public WebTransportConnection(WebTransport webtransport){
-		lastHeaders = new ArrayList<String>();
 		lastDocument = new String();
+		lastHeaders = new ArrayList<String>();
 		parent = webtransport;
 	}
 	
@@ -63,6 +63,7 @@ public class WebTransportConnection{
 	/** Sort the response into headers, document */
 	public void handleHeaders() throws IOException{
 		String line;
+		lastHeaders.clear();
 		if(parent.getSsl()){
 			do{
 				line = sslhandler.readLine();
@@ -78,6 +79,7 @@ public class WebTransportConnection{
 				if(header.contains("Content-Length: ")){
 					// Pass the Content-Length so readBuffer knows when to stop reading 
 					lastDocument = sslhandler.readBuffer(Integer.parseInt(header.replace("Content-Length: ", "")));
+					break;
 				}
 			}
 		} else {

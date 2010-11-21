@@ -17,5 +17,7 @@
     	<activity android:name=".AlertList"/>
     	<activity android:name=".AlertView"/>
     	<activity android:name=".ServerHashDialog" android:theme="@android:style/Theme.Dialog"/>
+	    <service android:name=".RequestService.Request" android:enabled="true">
+	    </service>
     </application>
 </manifest>

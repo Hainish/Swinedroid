@@ -103,6 +103,15 @@ public class AlertView extends Activity{
 	private ServiceConnection mConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
 		    mBoundRequest = ((Request.RequestBinder)service).getService();
+	
+			if(!mGotAlert){
+				// Display the progress dialog first
+				pd = ProgressDialog.show(AlertView.this, "", "Connecting. Please wait...", true);
+				Thread thread = new Thread(alertRunnable);
+				thread.start();
+			} else {
+		    	fillData();
+			}
 		}
 		
 		public void onServiceDisconnected(ComponentName className) {
@@ -305,15 +314,6 @@ public class AlertView extends Activity{
 			}
 			
 			startRequestService();
-	
-			if(!mGotAlert){
-				// Display the progress dialog first
-				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-				Thread thread = new Thread(alertRunnable);
-				thread.start();
-			} else {
-		    	fillData();
-			}
 		} catch (UnknownHostException e) {
 			Log.w(LOG_TAG,e.toString());
 		}

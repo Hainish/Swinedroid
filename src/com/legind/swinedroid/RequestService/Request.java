@@ -36,6 +36,7 @@ public class Request extends Service{
 	
     @Override
     public void onCreate() {
+		requestList = new ArrayList<RequestElement>();
 		mDbHelper = new ServerDbAdapter(this);
 		mDbHelper.open();
 	}
@@ -81,7 +82,7 @@ public class Request extends Service{
     
 	/* Creates a webtransportconnection if one does not already exist for the given RequestElement */
 	public void openWebTransportConnection() throws IOException{
-		if(!mCurrentRequestElement.webtransportconnection.isConnected()){
+		if(mCurrentRequestElement.webtransportconnection == null || !mCurrentRequestElement.webtransportconnection.isConnected()){
 			try{
 				mCurrentRequestElement.webtransportconnection = new WebTransport("https://" + mCurrentRequestElement.mHostText + ":" + Integer.toString(mCurrentRequestElement.mPortInt) + "/").getConnection();
 				mCurrentRequestElement.webtransportconnection.open();
