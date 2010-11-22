@@ -7,6 +7,8 @@ import java.security.KeyManagementException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
+import android.util.Log;
+
 import com.legind.ssl.SSLHandler.SSLHandler;
 
 public class WebTransportConnection{
@@ -55,18 +57,20 @@ public class WebTransportConnection{
 		}
 	}
 	
-	public void handleResponse() throws IOException{
+	public void handleResponse() throws IOException, WebTransportException{
 		handleHeaders();
 		handleDocument();
 	}
 	
 	/** Sort the response into headers, document */
-	public void handleHeaders() throws IOException{
+	public void handleHeaders() throws IOException, WebTransportException{
 		String line;
 		lastHeaders.clear();
 		if(parent.getSsl()){
 			do{
 				line = sslhandler.readLine();
+				if(line.trim().contentEquals("HTTP/1.1 408 Request Timeout"))
+					throw new WebTransportException("Request Timeout");
 				if(line.trim() != "")
 					lastHeaders.add(line.trim());
 			} while(line.trim() != "");
@@ -84,10 +88,6 @@ public class WebTransportConnection{
 			}
 		} else {
 		}
-	}
-	
-	public Boolean isConnected(){
-		return (sslhandler != null && sslhandler.isConnected());
 	}
 	
 	public ArrayList<String> getLastHeaders(){

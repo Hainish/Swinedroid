@@ -6,6 +6,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import com.legind.swinedroid.RequestService.Request;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class AlertXMLHandler extends XMLHandler{
 	private boolean inProtocol = false;
@@ -115,7 +116,7 @@ public class AlertXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		alert = new AlertXMLElement();
 		super.createElement(request, call, extra_parameters);
 	}

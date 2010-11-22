@@ -71,18 +71,27 @@ public class Request extends Service{
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_USERNAME));
 			mCurrentRequestElement.mPasswordText = server.getString(server
 					.getColumnIndexOrThrow(ServerDbAdapter.KEY_PASSWORD));
-			mCurrentRequestElement.mMD5 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
-			mCurrentRequestElement.mSHA1 = server.getString(server
-					.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
+			fetchServerHashes(server);
 		}
 	
 		
     }
     
+    public void fetchServerHashes(){
+    	Cursor server = mDbHelper.fetch(mCurrentRequestElement.mRowId);
+    	fetchServerHashes(server);
+    }
+    
+    public void fetchServerHashes(Cursor server){
+		mCurrentRequestElement.mMD5 = server.getString(server
+				.getColumnIndexOrThrow(ServerDbAdapter.KEY_MD5));
+		mCurrentRequestElement.mSHA1 = server.getString(server
+				.getColumnIndexOrThrow(ServerDbAdapter.KEY_SHA1));
+    }
+    
 	/* Creates a webtransportconnection if one does not already exist for the given RequestElement */
 	public void openWebTransportConnection() throws IOException{
-		if(mCurrentRequestElement.webtransportconnection == null || !mCurrentRequestElement.webtransportconnection.isConnected()){
+		if(mCurrentRequestElement.webtransportconnection == null){
 			try{
 				mCurrentRequestElement.webtransportconnection = new WebTransport("https://" + mCurrentRequestElement.mHostText + ":" + Integer.toString(mCurrentRequestElement.mPortInt) + "/").getConnection();
 				mCurrentRequestElement.webtransportconnection.open();
@@ -93,6 +102,13 @@ public class Request extends Service{
 			} catch (KeyManagementException e){
 				Log.e(LOG_TAG,e.toString());
 			}
+		}
+	}
+	
+	public void closeWebTransportConnection(){
+		if(mCurrentRequestElement.webtransportconnection != null){
+			mCurrentRequestElement.webtransportconnection.close();
+			mCurrentRequestElement.webtransportconnection = null;
 		}
 	}
 	
@@ -127,7 +143,7 @@ public class Request extends Service{
 	 * @param call the call request to pass to the webtransportconnection
 	 * @param extra_parameters a ampersand-seperated list of extra parameters for the call
 	 */
-	public String makeRequest(String call, String extra_parameters) throws IOException{
+	public String makeRequest(String call, String extra_parameters) throws IOException, WebTransportException{
 		String[] webrequest = {
 			"GET /?username=" + mCurrentRequestElement.mUsernameText + "&password=" + mCurrentRequestElement.mPasswordText + "&call=" + call + (extra_parameters != "" ? "&" + extra_parameters : "") + " HTTP/1.1",
 			"Host: " + mCurrentRequestElement.mHostText + ":" + Integer.toString(mCurrentRequestElement.mPortInt), "User-Agent: Swinedroid","Keep-Alive: 300","Connection: keep-alive"};
@@ -154,10 +170,10 @@ public class Request extends Service{
 	}
 
 	/* TODO: Remove getter md5 and sha1 methods, move ServerHashDialog handling to Request service */
-	public String getCurrentMD5(){
-		return mCurrentRequestElement.mMD5;
+	public String getLastServerCertMD5(){
+		return mLastServerCertMD5;
 	}
-	public String getCurrentSHA1(){
-		return mCurrentRequestElement.mSHA1;
+	public String getLastServerCertSHA1(){
+		return mLastServerCertSHA1;
 	}
 }

@@ -43,6 +43,7 @@ import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.AlertXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class AlertView extends Activity{
 	private Long mRowId;
@@ -133,7 +134,12 @@ public class AlertView extends Activity{
 		 * Send an XML request to the XML handler.  If an error occurs, send a message
 		 * to the handler with the appropriate error code
 		 */
+	    
 		public void run() {
+			sendRequestHandleResponse();
+		}
+		
+		public void sendRequestHandleResponse() {
 			try {
 				mBoundRequest.openWebTransportConnection();
 				if(!mBoundRequest.inspectCertificate()){
@@ -157,6 +163,9 @@ public class AlertView extends Activity{
 				msg.what = SERVER_ERROR;
 				msg.obj = e.getMessage();
 				msg.sendToTarget();
+			} catch (WebTransportException e){
+				mBoundRequest.closeWebTransportConnection();
+				sendRequestHandleResponse();
 			}
 		}
 
@@ -194,9 +203,9 @@ public class AlertView extends Activity{
 						// must set this to true, in case onPause happens for child activity
 						mGotAlert = true;
 			        	Intent i = new Intent(AlertView.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
-			        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
-			        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
+			        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
+			        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
+			        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
 						startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 					break;
 					case DOCUMENT_VALID:
@@ -368,6 +377,7 @@ public class AlertView extends Activity{
 				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
 				Bundle extras = intent.getExtras();
 				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+				mBoundRequest.fetchServerHashes();
 				Thread thread = new Thread(alertRunnable);
 				thread.start();
 			break;

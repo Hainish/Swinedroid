@@ -46,7 +46,7 @@ public class SSLHandler {
 	        mSocket.startHandshake();
 	        mServerCertificate = trustManager.getChildCert();
 	        // RFC 1047
-            mSocket.setSoTimeout(300000);
+            mSocket.setSoTimeout(10000);
             mIn = new BufferedInputStream(mSocket.getInputStream(), 1024);
             mOut = mSocket.getOutputStream();
 		} catch (NoSuchAlgorithmException e) {
@@ -79,12 +79,9 @@ public class SSLHandler {
     
     // Read a buffer given a length and pass back a string
     public String readBuffer(int length) throws IOException{
-        StringBuffer sb = new StringBuffer();
-        int d;
-        for(int i = 0; i < length && (d = mIn.read()) != -1; i++){
-        	sb.append((char)d);
-        }
-        String ret = sb.toString();
+        byte[] byteBuffer = new byte[length];
+        mIn.read(byteBuffer, 0, length);
+        String ret = new String(byteBuffer);
         return ret;
     }
 
@@ -106,10 +103,16 @@ public class SSLHandler {
     }
 
     public void writeLine(String s) throws IOException {
-        mOut.write(s.getBytes());
-        mOut.write('\r');
-        mOut.write('\n');
-        mOut.flush();
+    	try{
+	        mOut.write(s.getBytes());
+	        mOut.write('\r');
+	        mOut.write('\n');
+	        mOut.flush();
+    	} catch (IOException e){
+    		close();
+    		open();
+    		writeLine(s);
+		}
     }
 
     private void checkLine(String line) throws Exception
@@ -162,10 +165,6 @@ public class SSLHandler {
     
     public OutputStream getOutputStream(){
     	return mOut;
-    }
-    
-    public Boolean isConnected(){
-    	return mSocket.isConnected();
     }
     
 }

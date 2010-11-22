@@ -16,6 +16,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import android.util.Log;
 
 import com.legind.swinedroid.RequestService.Request;
+import com.legind.web.WebTransport.WebTransportException;
 
 
 
@@ -39,11 +40,11 @@ public class XMLHandler extends DefaultHandler{
 			errorString = chars;
 	}
 	
-	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		createElement(request, call, "");
 	}
 	
-	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		try{
 			String xmlString = request.makeRequest(call, extra_parameters);
 			SAXParserFactory spf = SAXParserFactory.newInstance();

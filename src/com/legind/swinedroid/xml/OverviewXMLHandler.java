@@ -7,6 +7,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import com.legind.swinedroid.RequestService.Request;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class OverviewXMLHandler extends XMLHandler{
 	private boolean in_all_time = false;
@@ -116,7 +117,7 @@ public class OverviewXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		alertChart = new AlertChart();
 		super.createElement(request, call);
 	}

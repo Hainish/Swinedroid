@@ -46,6 +46,7 @@ import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class AlertList extends ListActivity{
 	private Long mRowId;
@@ -136,7 +137,11 @@ public class AlertList extends ListActivity{
 		 * Send an XML request to the XML handler.  If an error occurs, send a message
 		 * to the handler with the appropriate error code
 		 */
-		public void run() {
+		public void run(){
+			sendRequestHandleResponse();
+		}
+		
+		public void sendRequestHandleResponse() {
 			try {
 				mBoundRequest.openWebTransportConnection();
 				if(!mBoundRequest.inspectCertificate()){
@@ -159,6 +164,9 @@ public class AlertList extends ListActivity{
 				msg.what = SERVER_ERROR;
 				msg.obj = e.getMessage();
 				msg.sendToTarget();
+			} catch (WebTransportException e){
+				mBoundRequest.closeWebTransportConnection();
+				sendRequestHandleResponse();
 			}
 		}
 
@@ -206,9 +214,9 @@ public class AlertList extends ListActivity{
 						// must set this to true, in case onPause happens for child activity
 						mGotAlerts = true;
 			        	Intent i = new Intent(AlertList.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
-			        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
-			        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
+			        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
+			        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
+			        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
 						switch(mFromCode){
 							case ALERTS_INITIAL:
 								startActivityForResult(i, ACTIVITY_HASH_DIALOG_INITIAL);
@@ -381,6 +389,7 @@ public class AlertList extends ListActivity{
 	    			case CERT_ACCEPTED:
 	    				Bundle extras = intent.getExtras();
 	    				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+        				mBoundRequest.fetchServerHashes();
 	    				switcher.showNext();
 	    				Thread thread = new Thread(additionalAlertsRunnable);
 	    				thread.start();

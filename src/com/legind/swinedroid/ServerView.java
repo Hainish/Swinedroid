@@ -32,6 +32,7 @@ import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class ServerView extends Activity implements Runnable {
 	private ServerDbAdapter mDbHelper;
@@ -260,6 +261,7 @@ public class ServerView extends Activity implements Runnable {
         				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         				Bundle extras = intent.getExtras();
         				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+        				mBoundRequest.fetchServerHashes();
         				Thread thread = new Thread(this);
         				thread.start();
         			break;
@@ -276,7 +278,11 @@ public class ServerView extends Activity implements Runnable {
 	}
     
 	public void run() {
-		try {
+		sendRequestHandleResponse();
+	}
+	
+	public void sendRequestHandleResponse(){
+		try{
 			mBoundRequest.openWebTransportConnection();
 			if(!mBoundRequest.inspectCertificate()){
 				handler.sendEmptyMessage(CERT_ERROR);
@@ -297,6 +303,9 @@ public class ServerView extends Activity implements Runnable {
 			msg.what = SERVER_ERROR;
 			msg.obj = e.getMessage();
 			msg.sendToTarget();
+		} catch (WebTransportException e){
+			mBoundRequest.closeWebTransportConnection();
+			sendRequestHandleResponse();
 		}
 	}
 
@@ -330,9 +339,9 @@ public class ServerView extends Activity implements Runnable {
 					mPausedForCertificate = true;
 					//mBoundRequest.displayCertificateDialog(ServerView.this);
 		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
-		        	i.putExtra("SHA1", mBoundRequest.getCurrentSHA1());
-		        	i.putExtra("MD5", mBoundRequest.getCurrentMD5());
-		        	i.putExtra("CERT_INVALID", (mBoundRequest.getCurrentSHA1() == null && mBoundRequest.getCurrentMD5() == null ? false : true));
+		        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
+		        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
+		        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
 		        	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
 				break;
 				case DOCUMENT_VALID:

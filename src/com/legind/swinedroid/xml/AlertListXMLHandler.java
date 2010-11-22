@@ -12,9 +12,10 @@ import java.util.LinkedList;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
-import com.legind.swinedroid.RequestService.Request;
-
 import android.util.Log;
+
+import com.legind.swinedroid.RequestService.Request;
+import com.legind.web.WebTransport.WebTransportException;
 
 public class AlertListXMLHandler extends XMLHandler{
 	private boolean inNumAlerts = false;
@@ -128,7 +129,7 @@ public class AlertListXMLHandler extends XMLHandler{
 	}
 	
 	@Override
-	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException{
+	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		alertList = new LinkedList<AlertListXMLElement>();
 		super.createElement(request, call, extra_parameters);
 	}
