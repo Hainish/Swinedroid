@@ -27,36 +27,44 @@ public class AlertXMLHandler extends XMLHandler{
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		super.startElement(uri, name, qName, atts);
 		if(name.trim().equals("protocol")){
+			super.clearStringBuilder();
 			inProtocol = true;
 		}
 		if(name.trim().equals("alert")){
 			inAlert = true;
 		}
 		if(name.trim().equals("hostname")){
+			super.clearStringBuilder();
 			inHostname = true;
 		}
 		if(name.trim().equals("interface")){
+			super.clearStringBuilder();
 			inInterface = true;
 		}
 		if(name.trim().equals("payload")){
+			super.clearStringBuilder();
 			inPayload = true;
 		}
 		if(name.trim().equals("sport")){
+			super.clearStringBuilder();
 			inSport = true;
 		}
 		if(name.trim().equals("dport")){
+			super.clearStringBuilder();
 			inDport = true;
 		}
 		if(name.trim().equals("type")){
+			super.clearStringBuilder();
 			inType = true;
 		}
 		if(name.trim().equals("code")){
+			super.clearStringBuilder();
 			inCode = true;
 		}
 	}
 
-	@Override
 	public void endElement(String uri, String name, String qName){
+		handleString();
 		super.endElement(uri, name, qName);
 		if(name.trim().equals("protocol")){
 			inProtocol = false;
@@ -86,33 +94,30 @@ public class AlertXMLHandler extends XMLHandler{
 			inCode = false;
 		}
 	}
-	
-	@Override
-	public void characters(char ch[], int start, int length){
-		super.characters(ch, start, length);
-		String chars = (new String(ch).substring(start, start + length));
+
+	public void handleString(){
 		if(inAlert && inProtocol){
-			if(chars.equals("icmp"))
+			if(super.getStringBuilder().toString().equals("icmp"))
 				alert.protocol = AlertXMLHandler.PROTO_ICMP;
-			if(chars.equals("tcp"))
+			if(super.getStringBuilder().toString().equals("tcp"))
 				alert.protocol = AlertXMLHandler.PROTO_TCP;
-			if(chars.equals("udp"))
+			if(super.getStringBuilder().toString().equals("udp"))
 				alert.protocol = AlertXMLHandler.PROTO_UDP;
 		}
 		if(inAlert && inHostname)
-			alert.hostname = chars;
+			alert.hostname = super.getStringBuilder().toString();
 		if(inAlert && inInterface)
-			alert.interface_name = chars;
+			alert.interface_name = super.getStringBuilder().toString();
 		if(inAlert && inPayload)
-			alert.payload = chars;
+			alert.payload = super.getStringBuilder().toString();
 		if(inAlert && inSport)
-			alert.sport = Integer.parseInt(chars);
+			alert.sport = Integer.parseInt(super.getStringBuilder().toString());
 		if(inAlert && inDport)
-			alert.dport = Integer.parseInt(chars);
+			alert.dport = Integer.parseInt(super.getStringBuilder().toString());
 		if(inAlert && inType)
-			alert.type = Byte.parseByte(chars);
+			alert.type = Byte.parseByte(super.getStringBuilder().toString());
 		if(inAlert && inCode)
-			alert.code = Byte.parseByte(chars);
+			alert.code = Byte.parseByte(super.getStringBuilder().toString());
 	}
 	
 	@Override

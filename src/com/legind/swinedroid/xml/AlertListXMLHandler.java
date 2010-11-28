@@ -36,6 +36,7 @@ public class AlertListXMLHandler extends XMLHandler{
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		super.startElement(uri, name, qName, atts);
 		if(name.trim().equals("num_alerts")){
+			super.clearStringBuilder();
 			inNumAlerts = true;
 		}
 		if(name.trim().equals("alert")){
@@ -43,30 +44,38 @@ public class AlertListXMLHandler extends XMLHandler{
 			alertList.add(new AlertListXMLElement());
 		}
 		if(name.trim().equals("sid")){
+			super.clearStringBuilder();
 			inSid = true;
 		}
 		if(name.trim().equals("cid")){
+			super.clearStringBuilder();
 			inCid = true;
 		}
 		if(name.trim().equals("ip_src")){
+			super.clearStringBuilder();
 			inIpSrc = true;
 		}
 		if(name.trim().equals("ip_dst")){
+			super.clearStringBuilder();
 			inIpDst = true;
 		}
 		if(name.trim().equals("sig_priority")){
+			super.clearStringBuilder();
 			inSigPriority = true;
 		}
 		if(name.trim().equals("sig_name")){
+			super.clearStringBuilder();
 			inSigName = true;
 		}
 		if(name.trim().equals("timestamp")){
+			super.clearStringBuilder();
 			inTimestamp = true;
 		}
 	}
 
 	@Override
 	public void endElement(String uri, String name, String qName){
+		handleString();
 		super.endElement(uri, name, qName);
 		if(name.trim().equals("num_alerts")){
 			inNumAlerts = false;
@@ -97,28 +106,25 @@ public class AlertListXMLHandler extends XMLHandler{
 		}
 	}
 	
-	@Override
-	public void characters(char ch[], int start, int length){
+	public void handleString(){
 		try{
-			super.characters(ch, start, length);
-			String chars = (new String(ch).substring(start, start + length));
 			if(inNumAlerts)
-				numAlerts = Long.parseLong(chars);
+				numAlerts = Long.parseLong(super.getStringBuilder().toString());
 			if(inAlert && inSid)
-				alertList.getLast().sid = Long.parseLong(chars);
+				alertList.getLast().sid = Long.parseLong(super.getStringBuilder().toString());
 			if(inAlert && inCid)
-				alertList.getLast().cid = Long.parseLong(chars);
+				alertList.getLast().cid = Long.parseLong(super.getStringBuilder().toString());
 			if(inAlert && inIpSrc)
-				alertList.getLast().ipSrc = InetAddress.getByName(chars);
+				alertList.getLast().ipSrc = InetAddress.getByName(super.getStringBuilder().toString());
 			if(inAlert && inIpDst)
-				alertList.getLast().ipDst = InetAddress.getByName(chars);
+				alertList.getLast().ipDst = InetAddress.getByName(super.getStringBuilder().toString());
 			if(inAlert && inSigPriority)
-				alertList.getLast().sigPriority = Byte.parseByte(chars);
+				alertList.getLast().sigPriority = Byte.parseByte(super.getStringBuilder().toString());
 			if(inAlert && inSigName){
-				alertList.getLast().sigName = chars;
+				alertList.getLast().sigName = super.getStringBuilder().toString();
 			}
 			if(inAlert && inTimestamp){
-				Date parsed_date = dateFormat.parse(chars);
+				Date parsed_date = dateFormat.parse(super.getStringBuilder().toString());
 				alertList.getLast().timestamp = new Timestamp(parsed_date.getTime());
 			}
 		} catch (UnknownHostException e) {

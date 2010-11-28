@@ -21,23 +21,29 @@ import com.legind.web.WebTransport.WebTransportException;
 
 
 public class XMLHandler extends DefaultHandler{
-	private boolean inError = false;
 	private String errorString = null;
+	private StringBuilder stringFromCharacters;
 	
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		if(name.trim().equals("error"))
-			inError = true;
+			stringFromCharacters = new StringBuilder();
 	}
 
 	public void endElement(String uri, String name, String qName){
 		if(name.trim().equals("error"))
-			inError = false;
+			errorString = stringFromCharacters.toString();
 	}
 
 	public void characters(char ch[], int start, int length){
-		String chars = (new String(ch).substring(start, start + length));
-		if(inError)
-			errorString = chars;
+		stringFromCharacters.append(ch, start, length);
+	}
+	
+	public void clearStringBuilder(){
+		stringFromCharacters = new StringBuilder();
+	}
+	
+	public StringBuilder getStringBuilder(){
+		return stringFromCharacters;
 	}
 	
 	public void createElement(Request request, String call) throws IOException, SAXException, XMLHandlerException, WebTransportException{
@@ -46,6 +52,7 @@ public class XMLHandler extends DefaultHandler{
 	
 	public void createElement(Request request, String call, String extra_parameters) throws IOException, SAXException, XMLHandlerException, WebTransportException{
 		try{
+			clearStringBuilder();
 			String xmlString = request.makeRequest(call, extra_parameters);
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();

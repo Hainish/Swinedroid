@@ -29,6 +29,7 @@ public class OverviewXMLHandler extends XMLHandler{
 			in_graph_info = true;
 		}
 		if(name.trim().equals("label")){
+			super.clearStringBuilder();
 			in_label = true;
 		}
 		if(name.trim().equals("all_time")){
@@ -41,18 +42,22 @@ public class OverviewXMLHandler extends XMLHandler{
 			in_last_24 = true;
 		}
 		if(name.trim().equals("high")){
+			super.clearStringBuilder();
 			in_high = true;
 		}
 		if(name.trim().equals("medium")){
+			super.clearStringBuilder();
 			in_medium = true;
 		}
 		if(name.trim().equals("low")){
+			super.clearStringBuilder();
 			in_low = true;
 		}
 	}
 
 	@Override
 	public void endElement(String uri, String name, String qName){
+		handleString();
 		super.endElement(uri, name, qName);
 		if(name.trim().equals("graph_info")){
 			in_graph_info = false;
@@ -79,41 +84,38 @@ public class OverviewXMLHandler extends XMLHandler{
 			in_low = false;
 		}
 	}
-	
-	@Override
-	public void characters(char ch[], int start, int length){
-		super.characters(ch, start, length);
-		String chars = (new String(ch).substring(start, start + length));
+
+	public void handleString(){
 		if(in_graph_info && in_high){
-			alertChart.setLastMomentHighAlert(Integer.parseInt(chars));
+			alertChart.setLastMomentHighAlert(Integer.parseInt(super.getStringBuilder().toString()));
 		}
 		if(in_graph_info && in_medium){
-			alertChart.setLastMomentMediumAlert(Integer.parseInt(chars));
+			alertChart.setLastMomentMediumAlert(Integer.parseInt(super.getStringBuilder().toString()));
 		}
 		if(in_graph_info && in_low){
-			alertChart.setLastMomentLowAlert(Integer.parseInt(chars));
+			alertChart.setLastMomentLowAlert(Integer.parseInt(super.getStringBuilder().toString()));
 		}
 		if(in_graph_info && in_label){
-			alertChart.setLastMomentLabel(chars);
+			alertChart.setLastMomentLabel(super.getStringBuilder().toString());
 		}
 		if(in_all_time && in_high)
-			current_element.all_time_high = Integer.parseInt(chars);
+			current_element.all_time_high = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_all_time && in_medium)
-			current_element.all_time_medium = Integer.parseInt(chars);
+			current_element.all_time_medium = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_all_time && in_low)
-			current_element.all_time_low = Integer.parseInt(chars);
+			current_element.all_time_low = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_72 && in_high)
-			current_element.last_72_high = Integer.parseInt(chars);
+			current_element.last_72_high = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_72 && in_medium)
-			current_element.last_72_medium = Integer.parseInt(chars);
+			current_element.last_72_medium = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_72 && in_low)
-			current_element.last_72_low = Integer.parseInt(chars);
+			current_element.last_72_low = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_24 && in_high)
-			current_element.last_24_high = Integer.parseInt(chars);
+			current_element.last_24_high = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_24 && in_medium)
-			current_element.last_24_medium = Integer.parseInt(chars);
+			current_element.last_24_medium = Integer.parseInt(super.getStringBuilder().toString());
 		if(in_last_24 && in_low)
-			current_element.last_24_low = Integer.parseInt(chars);
+			current_element.last_24_low = Integer.parseInt(super.getStringBuilder().toString());
 	}
 	
 	@Override
