@@ -7,8 +7,6 @@ import java.security.KeyManagementException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 
-import android.util.Log;
-
 import com.legind.ssl.SSLHandler.SSLHandler;
 
 public class WebTransportConnection{

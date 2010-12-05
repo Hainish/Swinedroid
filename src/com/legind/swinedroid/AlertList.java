@@ -24,9 +24,6 @@ import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -42,7 +39,8 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.swinedroid.RequestService.Request;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnable;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableRequires;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
@@ -74,8 +72,8 @@ public class AlertList extends ListActivity{
     private final int ACTIVITY_VIEW=2;
 	private final int CERT_REJECTED = 0;
 	private final int CERT_ACCEPTED = 1;
-	private AlertsDisplayRunnable additionalAlertsRunnable;
-	private AlertsDisplayRunnable initialAlertsRunnable;
+	private AlertsDisplay additionalAlertsRunnable;
+	private AlertsDisplay initialAlertsRunnable;
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
 	private ErrorMessageHandler mEMH;
     public static Activity LA = null;
@@ -92,35 +90,10 @@ public class AlertList extends ListActivity{
 		public String timestamp_time;
 		public byte sig_priority;
 	}
-    
-	private Request mBoundRequest;
-	private ServiceConnection mConnection = new ServiceConnection() {
-		public void onServiceConnected(ComponentName className, IBinder service) {
-		    mBoundRequest = ((Request.RequestBinder)service).getService();
-
-			if(!mGotAlerts){
-				// Display the progress dialog first
-				pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
-				Thread thread = new Thread(initialAlertsRunnable);
-				thread.start();
-			} else {
-		    	fillData();
-			}
-		}
-		
-		public void onServiceDisconnected(ComponentName className) {
-			mBoundRequest = null;
-		}
-	};
 	
-	private class AlertsDisplayRunnable implements Runnable {
+	private class AlertsDisplay implements NetworkRunnableRequires{
 		private int mFromCode;
-		private final int DOCUMENT_VALID = 0;
-		private final int IO_ERROR = 1;
-		private final int XML_ERROR = 2;
-		private final int SERVER_ERROR = 3;
-		private final int CERT_ERROR = 4;
-		
+	    public NetworkRunnable mNetRun;
 		
 
 		/**
@@ -129,123 +102,115 @@ public class AlertList extends ListActivity{
 		 * @param ctx the AlertList context from which it is called
 		 * @param fromCode how this runnable is called, either loading the inital alerts or additional alerts
 		 */
-		public AlertsDisplayRunnable(int fromCode){
+		public AlertsDisplay(int fromCode){
 			mFromCode = fromCode;
+			mNetRun = new NetworkRunnable(this);
 		}
-		
-		/**
-		 * Send an XML request to the XML handler.  If an error occurs, send a message
-		 * to the handler with the appropriate error code
-		 */
-		public void run(){
-			sendRequestHandleResponse();
+
+		public boolean bindService(Intent service, ServiceConnection conn, int flags){
+			return LA.bindService(service, conn, flags);
 		}
-		
-		public void sendRequestHandleResponse() {
-			try {
-				mBoundRequest.openWebTransportConnection();
-				if(!mBoundRequest.inspectCertificate()){
-					handler.sendEmptyMessage(CERT_ERROR);
-				} else {
-					String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
-					mAlertListXMLHandler.createElement(mBoundRequest, "alerts", extraArgs);
-					handler.sendEmptyMessage(DOCUMENT_VALID);
-				}
-			} catch (IOException e) {
-				Log.e(LOG_TAG, e.toString());
-				handler.sendEmptyMessage(IO_ERROR);
-			} catch (SAXException e) {
-				Log.e(LOG_TAG, e.toString());
-				handler.sendEmptyMessage(XML_ERROR);
-			} catch (XMLHandlerException e){
-				Log.e(LOG_TAG, e.toString());
-				Message msg = Message.obtain();
-				msg.setTarget(handler);
-				msg.what = SERVER_ERROR;
-				msg.obj = e.getMessage();
-				msg.sendToTarget();
-			} catch (WebTransportException e){
-				mBoundRequest.closeWebTransportConnection();
-				sendRequestHandleResponse();
+
+		public void callHashDialog(Intent i) {
+			switch(mFromCode){
+				case ALERTS_INITIAL:
+					startActivityForResult(i, ACTIVITY_HASH_DIALOG_INITIAL);
+				break;
+				case ALERTS_ADDITIONAL:
+					startActivityForResult(i, ACTIVITY_HASH_DIALOG_ADDITIONAL);
+				break;
 			}
 		}
 
-		/**
-		 *  Catch and display any errors sent to the handler, otherwise populate all alerts
-		 */
-		private Handler handler = new Handler() {
-			@Override
-			public void handleMessage(Message message) {
-				/* We must dismiss the ProgressDialogue if it is the initial alerts population,
-				 * and show the previous view for the switcher for additional alerts.
-				 */
-				switch(mFromCode){
-					case ALERTS_INITIAL:
-						pd.dismiss();
-					break;
-					case ALERTS_ADDITIONAL:
-						switcher.showPrevious();
-					break;
-				}
-				OnCancelListener cancelListener = new OnCancelListener() {
-					public void onCancel(DialogInterface dialog) {
-						switch(mFromCode){
-							case ALERTS_INITIAL:
-								finish();
-							break;
-						}
-						return;
+		public void finish() {
+			LA.finish();
+		}
+
+		public OnCancelListener getCancelListener() {
+			return new OnCancelListener() {
+				public void onCancel(DialogInterface dialog) {
+					switch(mFromCode){
+						case ALERTS_INITIAL:
+							finish();
+						break;
 					}
-				};
-				switch(message.what){
-					case IO_ERROR:
-						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
-					break;
-					case XML_ERROR:
-						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
-					break;
-					case SERVER_ERROR:
-						mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
-					break;
-					case CERT_ERROR:
-						/*
-						 * If there is a certificate mismatch, display the ServerHashDialog activity
-						 */
-						// must set this to true, in case onPause happens for child activity
-						mGotAlerts = true;
-			        	Intent i = new Intent(AlertList.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
-			        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
-			        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
-						switch(mFromCode){
-							case ALERTS_INITIAL:
-								startActivityForResult(i, ACTIVITY_HASH_DIALOG_INITIAL);
-							break;
-							case ALERTS_ADDITIONAL:
-								startActivityForResult(i, ACTIVITY_HASH_DIALOG_ADDITIONAL);
-							break;
-						}
-					break;
-					case DOCUMENT_VALID:
-						switch(mFromCode){
-							case ALERTS_INITIAL:
-								// clear the alerts database
-								mAlertDbHelper.deleteAll();
-								mGotAlerts = true;
-								mNumAlertsTotal = mAlertListXMLHandler.numAlerts;
-								mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
-								fillData();
-							break;
-							case ALERTS_ADDITIONAL:
-								mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
-								fillDataFromAlertList(mAlertListXMLHandler.alertList);
-							break;
-						}
-					break;
+					return;
 				}
+			};
+		}
 
+		public Context getContext() {
+			return LA;
+		}
+
+		public ErrorMessageHandler getEMH() {
+			return mEMH;
+		}
+
+		public Long getRowId() {
+			return mRowId;
+		}
+
+		public void onBoundRequestSet() {
+			switch(mFromCode){
+				case ALERTS_INITIAL:
+					if(!mGotAlerts){
+						// Display the progress dialog first
+						pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
+						
+						Thread thread = new Thread(initialAlertsRunnable.mNetRun);
+						thread.start();
+					} else {
+				    	fillData();
+					}
+				break;
 			}
-		};
+		}
+
+		public void onCertErrorBegin() {
+			mGotAlerts = true;
+		}
+
+		public void onCertificateInspectVerified() throws IOException, SAXException, XMLHandlerException, WebTransportException {
+			String extraArgs = "alert_severity=" + mAlertSeverity + "&search_term=" + mSearchTerm + (mBeginningDatetime != null ? "&beginning_datetime=" + mBeginningDatetime : "") + (mEndingDatetime != null ? "&ending_datetime=" + mEndingDatetime : "") + "&starting_at=" + String.valueOf(mNumAlertsDisplayed);
+			mAlertListXMLHandler.createElement(mNetRun.getBoundRequest(), "alerts", extraArgs);
+		}
+
+		public void onDocumentValidReturned() {
+			switch(mFromCode){
+				case ALERTS_INITIAL:
+					// clear the alerts database
+					mAlertDbHelper.deleteAll();
+					mGotAlerts = true;
+					mNumAlertsTotal = mAlertListXMLHandler.numAlerts;
+					mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
+					fillData();
+				break;
+				case ALERTS_ADDITIONAL:
+					mAlertDbHelper.createAlertsFromAlertList(mAlertListXMLHandler.alertList);
+					fillDataFromAlertList(mAlertListXMLHandler.alertList);
+				break;
+			}
+		}
+
+		public void onHandleMessageBegin() {
+			switch(mFromCode){
+			case ALERTS_INITIAL:
+				pd.dismiss();
+			break;
+			case ALERTS_ADDITIONAL:
+				switcher.showPrevious();
+			break;
+		}
+		}
+
+		public ComponentName startService(Intent service) {
+			return LA.startService(service);
+		}
+
+		public void unbindService(ServiceConnection conn) {
+			LA.unbindService(conn);
+		}
 		
 	}
 	
@@ -275,14 +240,14 @@ public class AlertList extends ListActivity{
 		switcher.addView(progressBar);
 		
 		// create the runnables for creating/expanding the alertsList
-		additionalAlertsRunnable = new AlertsDisplayRunnable(ALERTS_ADDITIONAL);
-		initialAlertsRunnable = new AlertsDisplayRunnable(ALERTS_INITIAL);
+		additionalAlertsRunnable = new AlertsDisplay(ALERTS_ADDITIONAL);
+		initialAlertsRunnable = new AlertsDisplay(ALERTS_INITIAL);
 		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				switcher.showNext();
-				Thread additionalAlertsThread = new Thread(additionalAlertsRunnable);
+				Thread additionalAlertsThread = new Thread(additionalAlertsRunnable.mNetRun);
 				additionalAlertsThread.start();
 			}
 		});
@@ -308,8 +273,9 @@ public class AlertList extends ListActivity{
 				mEndingDatetime = extras.getInt("mEndYear") != 0 ? String.format("%04d", extras.getInt("mEndYear")) + "-" + String.format("%02d", extras.getInt("mEndMonth") + 1) + "-" + String.format("%02d", extras.getInt("mEndDay")) + "%20" + String.format("%02d", extras.getInt("mEndHour")) + ":" + String.format("%02d", extras.getInt("mEndMinute")) : null;
 			}
 		}
-		
-		startRequestService();
+
+		initialAlertsRunnable.mNetRun.startRequestService();
+		additionalAlertsRunnable.mNetRun.startRequestService();
 	}
 	
     @Override
@@ -327,7 +293,7 @@ public class AlertList extends ListActivity{
 			Context context = getApplicationContext();
 			CharSequence text = Long.toString(info.id);
 	        AlertListTracker tracker = AlertListTracker.get((int)info.id);
-			Thread additionalAlertsThread = new Thread(additionalAlertsRunnable);
+			Thread additionalAlertsThread = new Thread(additionalAlertsRunnable.mNetRun);
 			additionalAlertsThread.start();
 	        return true;
 		}
@@ -336,10 +302,9 @@ public class AlertList extends ListActivity{
     
 	@Override
 	protected void onDestroy() {
-		mDbHelper.close();
 		mAlertDbHelper.close();
-		if(mBoundRequest != null)
-			unbindService(mConnection);
+		initialAlertsRunnable.mNetRun.close();
+		additionalAlertsRunnable.mNetRun.close();
 		super.onDestroy();
 	}
 
@@ -377,7 +342,7 @@ public class AlertList extends ListActivity{
         				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         				Bundle extras = intent.getExtras();
         				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
-        				Thread thread = new Thread(initialAlertsRunnable);
+        				Thread thread = new Thread(initialAlertsRunnable.mNetRun);
         				thread.start();
         			break;
         		}
@@ -389,22 +354,15 @@ public class AlertList extends ListActivity{
 	    			case CERT_ACCEPTED:
 	    				Bundle extras = intent.getExtras();
 	    				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
-        				mBoundRequest.fetchServerHashes();
+        				initialAlertsRunnable.mNetRun.getBoundRequest().fetchServerHashes();
 	    				switcher.showNext();
-	    				Thread thread = new Thread(additionalAlertsRunnable);
+	    				Thread thread = new Thread(additionalAlertsRunnable.mNetRun);
 	    				thread.start();
 	    			break;
         		}
         	break;
         }
     }
-    
-	private void startRequestService() {
-        Intent newinIntent = new Intent(this, Request.class);
-        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
-        startService(newinIntent);
-        bindService(newinIntent, mConnection, 0);
-	}
 
 	private void fillData() {
 		try{

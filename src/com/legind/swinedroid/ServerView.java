@@ -11,16 +11,11 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
@@ -29,13 +24,13 @@ import android.widget.TextView;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.swinedroid.RequestService.Request;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnable;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableRequires;
 import com.legind.swinedroid.xml.OverviewXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 import com.legind.web.WebTransport.WebTransportException;
 
-public class ServerView extends Activity implements Runnable {
-	private ServerDbAdapter mDbHelper;
+public class ServerView extends Activity implements NetworkRunnableRequires{
 	private TextView mServerViewTitleText;
 	private TextView mAllTimeHighText;
 	private TextView mAllTimeMediumText;
@@ -54,51 +49,23 @@ public class ServerView extends Activity implements Runnable {
 	private boolean mPausedForCertificate;
 	private Long mRowId;
 	private OverviewXMLHandler mOverviewXMLHandler;
-	private ErrorMessageHandler mEMH;
+	public ErrorMessageHandler mEMH;
 	private ProgressDialog pd;
-	private final String LOG_TAG = "com.legind.swinedroid.ServerView";
-	private final int DOCUMENT_VALID = 0;
-	private final int IO_ERROR = 1;
-	private final int XML_ERROR = 2;
-	private final int SERVER_ERROR = 3;
-	private final int CERT_ERROR = 4;
 	private final int ACTIVITY_SEARCH = 0;
 	private final int ACTIVITY_ALERT_LIST = 1;
 	private final int ACTIVITY_HASH_DIALOG = 2;
-	private final int CERT_REJECTED = 0;
-	private final int CERT_ACCEPTED = 1;
 	private static final int REFRESH_ID = 1;
 	private static final int VIEW_ID = 2;
 	private static final int SEARCH_ID = 3;
     public static Activity A = null;
-    
-	private Request mBoundRequest;
-	private ServiceConnection mConnection = new ServiceConnection() {
-		public void onServiceConnected(ComponentName className, IBinder service) {
-		    mBoundRequest = ((Request.RequestBinder)service).getService();
-			mServerViewTitleText.setText(mBoundRequest.getCurrentHost() + " Severity Statistics");
-			
-			if(!mGotStatistics){
-				// Display the progress dialog first
-				pd = ProgressDialog.show(ServerView.this, "", "Connecting. Please wait...", true);
-				Thread thread = new Thread(ServerView.this);
-				thread.start();
-			}
-		}
-		
-		public void onServiceDisconnected(ComponentName className) {
-			mBoundRequest = null;
-		}
-	};
-
+    private NetworkRunnable mNetRun;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		mNetRun = new NetworkRunnable(this);
 		A = this;
 		mOverviewXMLHandler = new OverviewXMLHandler();
-		mDbHelper = new ServerDbAdapter(this);
-		mDbHelper.open();
 		mGotStatistics = false;
 		
 		// Hide the title bar
@@ -160,14 +127,12 @@ public class ServerView extends Activity implements Runnable {
 					: null;
 		}
 		
-		startRequestService();
+		mNetRun.startRequestService();
 	}
     
 	@Override
 	protected void onDestroy() {
-		mDbHelper.close();
-		if(mBoundRequest != null)
-			unbindService(mConnection);
+		mNetRun.close();
 		super.onDestroy();
 	}
     
@@ -190,7 +155,7 @@ public class ServerView extends Activity implements Runnable {
         		// Display the ProgressDialog and start thread
         		mGotStatistics = false;
         		pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-        		Thread thread = new Thread(this);
+        		Thread thread = new Thread(mNetRun);
         		thread.start();
         	break;
         	case VIEW_ID:
@@ -246,129 +211,78 @@ public class ServerView extends Activity implements Runnable {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        switch(requestCode){
-        	case ACTIVITY_HASH_DIALOG:
-        		/*
-        		 * The ServerHashDialog activity has finished.  if the cert is rejected, finish this activity.
-        		 * If accepted, try connecting to the server all over again.
-        		 */
-        		switch(resultCode){
-        			case CERT_REJECTED:
-        				finish();
-        			break;
-        			case CERT_ACCEPTED:
-        				mPausedForCertificate = false;
-        				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-        				Bundle extras = intent.getExtras();
-        				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
-        				mBoundRequest.fetchServerHashes();
-        				Thread thread = new Thread(this);
-        				thread.start();
-        			break;
-        		}
-        	break;
-        }
+        mNetRun.certificateActivityResult(requestCode, resultCode, intent, ACTIVITY_HASH_DIALOG);
     }
-    
-	private void startRequestService() {
-        Intent newinIntent = new Intent(this, Request.class);
-        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
-        startService(newinIntent);
-        bindService(newinIntent, mConnection, 0);
-	}
-    
-	public void run() {
-		sendRequestHandleResponse();
+
+	public Long getRowId() {
+		return mRowId;
 	}
 	
-	public void sendRequestHandleResponse(){
-		try{
-			mBoundRequest.openWebTransportConnection();
-			if(!mBoundRequest.inspectCertificate()){
-				handler.sendEmptyMessage(CERT_ERROR);
-			} else {
-				mOverviewXMLHandler.createElement(mBoundRequest, "overview");
-				handler.sendEmptyMessage(DOCUMENT_VALID);
-			}
-		} catch (IOException e) {
-			Log.e(LOG_TAG, e.toString());
-			handler.sendEmptyMessage(IO_ERROR);
-		} catch (SAXException e) {
-			Log.e(LOG_TAG, e.toString());
-			handler.sendEmptyMessage(XML_ERROR);
-		} catch (XMLHandlerException e){
-			Log.e(LOG_TAG, e.toString());
-			Message msg = Message.obtain();
-			msg.setTarget(handler);
-			msg.what = SERVER_ERROR;
-			msg.obj = e.getMessage();
-			msg.sendToTarget();
-		} catch (WebTransportException e){
-			mBoundRequest.closeWebTransportConnection();
-			sendRequestHandleResponse();
+	public ErrorMessageHandler getEMH(){
+		return mEMH;
+	}
+	
+	public Context getContext(){
+		return this;
+	}
+	
+	public void onBoundRequestSet(){
+		mServerViewTitleText.setText(mNetRun.getBoundRequest().getCurrentHost() + " Severity Statistics");
+		
+		if(!mGotStatistics){
+			// Display the progress dialog first
+			pd = ProgressDialog.show(ServerView.this, "", "Connecting. Please wait...", true);
+			Thread thread = new Thread(mNetRun);
+			thread.start();
 		}
 	}
-
-	// Catch and display any errors sent to the handler, otherwise populate all statistics fields
-	private volatile Handler handler = new Handler() {
-		@Override
-		public void handleMessage(Message message) {
-			pd.dismiss();
-			OnCancelListener cancelListener = new OnCancelListener() {
-				public void onCancel(DialogInterface dialog) {
-					mDbHelper.close();
-					finish();
-					return;
-				}
-			};
-			switch(message.what){
-				case IO_ERROR:
-					mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
-				break;
-				case XML_ERROR:
-					mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
-				break;
-				case SERVER_ERROR:
-					mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
-				break;
-				case CERT_ERROR:
-					/*
-					 * If there is a certificate mismatch, display the ServerHashDialog activity
-					 */
-					// must set this to true, in case onPause happens for child activity
-					mPausedForCertificate = true;
-					//mBoundRequest.displayCertificateDialog(ServerView.this);
-		        	Intent i = new Intent(ServerView.this, ServerHashDialog.class);
-		        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
-		        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
-		        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
-		        	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
-				break;
-				case DOCUMENT_VALID:
-					mGotStatistics = true;
-					DecimalFormat df = new DecimalFormat();
-					DecimalFormatSymbols dfs = new DecimalFormatSymbols();
-					dfs.setGroupingSeparator(',');
-					df.setDecimalFormatSymbols(dfs);
-					mAllTimeHighText.setText(df.format(mOverviewXMLHandler.current_element.all_time_high));
-					mAllTimeMediumText.setText(df.format(mOverviewXMLHandler.current_element.all_time_medium));
-					mAllTimeLowText.setText(df.format(mOverviewXMLHandler.current_element.all_time_low));
-					mAllTimeTotalText.setText(df.format(mOverviewXMLHandler.current_element.all_time_high + mOverviewXMLHandler.current_element.all_time_medium + mOverviewXMLHandler.current_element.all_time_low));
-					mLast72HighText.setText(df.format(mOverviewXMLHandler.current_element.last_72_high));
-					mLast72MediumText.setText(df.format(mOverviewXMLHandler.current_element.last_72_medium));
-					mLast72LowText.setText(df.format(mOverviewXMLHandler.current_element.last_72_low));
-					mLast72TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_72_high + mOverviewXMLHandler.current_element.last_72_medium + mOverviewXMLHandler.current_element.last_72_low));
-					mLast24HighText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high));
-					mLast24MediumText.setText(df.format(mOverviewXMLHandler.current_element.last_24_medium));
-					mLast24LowText.setText(df.format(mOverviewXMLHandler.current_element.last_24_low));
-					mLast24TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high + mOverviewXMLHandler.current_element.last_24_medium + mOverviewXMLHandler.current_element.last_24_low));
-					alertLinearLayout.removeAllViews();
-					mOverviewXMLHandler.alertChart.setTitleString("Alerts by Date");
-					mOverviewXMLHandler.alertChart.setXAxisString("Date");
-					alertLinearLayout.addView(mOverviewXMLHandler.alertChart.execute(ServerView.A));
-				break;
+	
+	public void onDocumentValidReturned(){
+		mGotStatistics = true;
+		DecimalFormat df = new DecimalFormat();
+		DecimalFormatSymbols dfs = new DecimalFormatSymbols();
+		dfs.setGroupingSeparator(',');
+		df.setDecimalFormatSymbols(dfs);
+		mAllTimeHighText.setText(df.format(mOverviewXMLHandler.current_element.all_time_high));
+		mAllTimeMediumText.setText(df.format(mOverviewXMLHandler.current_element.all_time_medium));
+		mAllTimeLowText.setText(df.format(mOverviewXMLHandler.current_element.all_time_low));
+		mAllTimeTotalText.setText(df.format(mOverviewXMLHandler.current_element.all_time_high + mOverviewXMLHandler.current_element.all_time_medium + mOverviewXMLHandler.current_element.all_time_low));
+		mLast72HighText.setText(df.format(mOverviewXMLHandler.current_element.last_72_high));
+		mLast72MediumText.setText(df.format(mOverviewXMLHandler.current_element.last_72_medium));
+		mLast72LowText.setText(df.format(mOverviewXMLHandler.current_element.last_72_low));
+		mLast72TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_72_high + mOverviewXMLHandler.current_element.last_72_medium + mOverviewXMLHandler.current_element.last_72_low));
+		mLast24HighText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high));
+		mLast24MediumText.setText(df.format(mOverviewXMLHandler.current_element.last_24_medium));
+		mLast24LowText.setText(df.format(mOverviewXMLHandler.current_element.last_24_low));
+		mLast24TotalText.setText(df.format(mOverviewXMLHandler.current_element.last_24_high + mOverviewXMLHandler.current_element.last_24_medium + mOverviewXMLHandler.current_element.last_24_low));
+		alertLinearLayout.removeAllViews();
+		mOverviewXMLHandler.alertChart.setTitleString("Alerts by Date");
+		mOverviewXMLHandler.alertChart.setXAxisString("Date");
+		alertLinearLayout.addView(mOverviewXMLHandler.alertChart.execute(ServerView.A));		
+	}
+	
+	public void onCertificateInspectVerified() throws IOException, SAXException, XMLHandlerException, WebTransportException{
+		mOverviewXMLHandler.createElement(mNetRun.getBoundRequest(), "overview");
+	}
+	
+	public OnCancelListener getCancelListener(){
+		return new OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {
+				finish();
+				return;
 			}
-
-		}
-	};
+		};
+	}
+	
+	public void onHandleMessageBegin(){
+		pd.dismiss();
+	}
+	
+	public void onCertErrorBegin(){
+		mPausedForCertificate = true;
+	}
+	
+	public void callHashDialog(Intent i){
+    	startActivityForResult(i, ACTIVITY_HASH_DIALOG);
+	}
 }

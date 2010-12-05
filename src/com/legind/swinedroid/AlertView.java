@@ -10,16 +10,13 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.text.ClipboardManager;
 import android.util.Log;
@@ -40,12 +37,13 @@ import android.widget.RelativeLayout.LayoutParams;
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
-import com.legind.swinedroid.RequestService.Request;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnable;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableRequires;
 import com.legind.swinedroid.xml.AlertXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 import com.legind.web.WebTransport.WebTransportException;
 
-public class AlertView extends Activity{
+public class AlertView extends Activity implements NetworkRunnableRequires{
 	private Long mRowId;
 	private ProgressDialog pd;
 	private ProgressDialog pdRDNS;
@@ -69,7 +67,6 @@ public class AlertView extends Activity{
 	private byte mCode;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertView";
 	private boolean mGotAlert;
-	private AlertDisplayRunnable alertRunnable;
 	private ResolveRDNSRunnable resolveRunnable;
 	private static final int ACTIVITY_HASH_DIALOG = 0;
 	private static final String KEY_PROTOCOL = "protocol";
@@ -86,8 +83,6 @@ public class AlertView extends Activity{
 	private static final int PAYLOAD_INFO_TABLE_ID = 4;
 	private static final int COPY_ID = 0;
 	private static final int RDNS_ID = 1;
-	private final int CERT_REJECTED = 0;
-	private final int CERT_ACCEPTED = 1;
 	private Menu alertViewMenu;
 	private ImageView alertIcon;
 	private TextView alertText;
@@ -99,133 +94,7 @@ public class AlertView extends Activity{
 	private TableLayout ipTableLayout;
     public static Activity A = null;
     private ErrorMessageHandler mEMH;
-    
-	private Request mBoundRequest;
-	private ServiceConnection mConnection = new ServiceConnection() {
-		public void onServiceConnected(ComponentName className, IBinder service) {
-		    mBoundRequest = ((Request.RequestBinder)service).getService();
-	
-			if(!mGotAlert){
-				// Display the progress dialog first
-				pd = ProgressDialog.show(AlertView.this, "", "Connecting. Please wait...", true);
-				Thread thread = new Thread(alertRunnable);
-				thread.start();
-			} else {
-		    	fillData();
-			}
-		}
-		
-		public void onServiceDisconnected(ComponentName className) {
-			mBoundRequest = null;
-		}
-	};
-	
-	private class AlertDisplayRunnable implements Runnable {
-		private final int DOCUMENT_VALID = 0;
-		private final int IO_ERROR = 1;
-		private final int XML_ERROR = 2;
-		private final int SERVER_ERROR = 3;
-		private final int CERT_ERROR = 4;
-
-		/**
-		 * Constructor for AlertDisplayRunnable.  Runnable becomes context-aware
-		 */
-		/**
-		 * Send an XML request to the XML handler.  If an error occurs, send a message
-		 * to the handler with the appropriate error code
-		 */
-	    
-		public void run() {
-			sendRequestHandleResponse();
-		}
-		
-		public void sendRequestHandleResponse() {
-			try {
-				mBoundRequest.openWebTransportConnection();
-				if(!mBoundRequest.inspectCertificate()){
-					handler.sendEmptyMessage(CERT_ERROR);
-				} else {
-					// construct the GET arguments string, send it to the XML handler
-					String extraArgs = "cid=" + mCid + "&sid=" + mSid;
-					mAlertXMLHandler.createElement(mBoundRequest, "alert", extraArgs);
-					handler.sendEmptyMessage(DOCUMENT_VALID);
-				}
-			} catch (IOException e) {
-				Log.e(LOG_TAG, e.toString());
-				handler.sendEmptyMessage(IO_ERROR);
-			} catch (SAXException e) {
-				Log.e(LOG_TAG, e.toString());
-				handler.sendEmptyMessage(XML_ERROR);
-			} catch (XMLHandlerException e){
-				Log.e(LOG_TAG, e.toString());
-				Message msg = Message.obtain();
-				msg.setTarget(handler);
-				msg.what = SERVER_ERROR;
-				msg.obj = e.getMessage();
-				msg.sendToTarget();
-			} catch (WebTransportException e){
-				mBoundRequest.closeWebTransportConnection();
-				sendRequestHandleResponse();
-			}
-		}
-
-		/**
-		 *  Catch and display any errors sent to the handler, otherwise populate all alerts
-		 */
-		private Handler handler = new Handler() {
-			@Override
-			public void handleMessage(Message message) {
-				/* We must dismiss the ProgressDialogue if it is the initial alerts population,
-				 * and show the previous view for the switcher for additional alerts.
-				 */
-				pd.dismiss();
-				OnCancelListener cancelListener = new OnCancelListener() {
-					public void onCancel(DialogInterface dialog) {
-						mDbHelper.close();
-						finish();
-						return;
-					}
-				};
-				switch(message.what){
-					case IO_ERROR:
-						mEMH.DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
-					break;
-					case XML_ERROR:
-						mEMH.DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
-					break;
-					case SERVER_ERROR:
-						mEMH.DisplayErrorMessage((String) message.obj,cancelListener);
-					break;
-					case CERT_ERROR:
-						/*
-						 * If there is a certificate mismatch, display the ServerHashDialog activity
-						 */
-						// must set this to true, in case onPause happens for child activity
-						mGotAlert = true;
-			        	Intent i = new Intent(AlertView.this, ServerHashDialog.class);
-			        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
-			        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
-			        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
-						startActivityForResult(i, ACTIVITY_HASH_DIALOG);
-					break;
-					case DOCUMENT_VALID:
-						mGotAlert = true;
-						mProtocol = mAlertXMLHandler.alert.protocol;
-						mHostname = mAlertXMLHandler.alert.hostname;
-						mInterfaceName = mAlertXMLHandler.alert.interface_name;
-						mPayload = mAlertXMLHandler.alert.payload;
-						mSport = mAlertXMLHandler.alert.sport;
-						mDport = mAlertXMLHandler.alert.dport;
-						mType = mAlertXMLHandler.alert.type;
-						mCode = mAlertXMLHandler.alert.code;
-						fillData();
-					break;
-				}
-
-			}
-		};
-		
-	}
+    private NetworkRunnable mNetRun = null;
 
 	private class ResolveRDNSRunnable implements Runnable {
 		private String ipSrcRDNS;
@@ -263,6 +132,7 @@ public class AlertView extends Activity{
 		try{
 			super.onCreate(savedInstanceState);
 			A = this;
+			mNetRun = new NetworkRunnable(this);
 	    	// Open up the XML and db handlers
 			mAlertXMLHandler = new AlertXMLHandler();
 			mDbHelper = new ServerDbAdapter(this);
@@ -277,8 +147,7 @@ public class AlertView extends Activity{
 			// initial value of mGotAlert is false
 			mGotAlert = false;
 			
-			// create the runnables
-			alertRunnable = new AlertDisplayRunnable();
+			// create the runnable
 			resolveRunnable = new ResolveRDNSRunnable();
 	
 			alertIcon = (ImageView) layout.findViewById(R.id.alert_view_icon);
@@ -322,7 +191,7 @@ public class AlertView extends Activity{
 				}
 			}
 			
-			startRequestService();
+			mNetRun.startRequestService();
 		} catch (UnknownHostException e) {
 			Log.w(LOG_TAG,e.toString());
 		}
@@ -330,9 +199,7 @@ public class AlertView extends Activity{
     
 	@Override
 	protected void onDestroy() {
-		mDbHelper.close();
-		if(mBoundRequest != null)
-			unbindService(mConnection);
+		mNetRun.close();
 		super.onDestroy();
 	}
 
@@ -365,31 +232,8 @@ public class AlertView extends Activity{
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-		/*
-		 * The ServerHashDialog activity has finished.  if the cert is rejected, finish this activity.
-		 * If accepted, try connecting to the server all over again.
-		 */
-		switch(resultCode){
-			case CERT_REJECTED:
-				finish();
-			break;
-			case CERT_ACCEPTED:
-				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
-				Bundle extras = intent.getExtras();
-				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
-				mBoundRequest.fetchServerHashes();
-				Thread thread = new Thread(alertRunnable);
-				thread.start();
-			break;
-		}
+        mNetRun.certificateActivityResult(requestCode, resultCode, intent, ACTIVITY_HASH_DIALOG);
     }
-    
-	private void startRequestService() {
-        Intent newinIntent = new Intent(this, Request.class);
-        newinIntent.putExtra(Request.ROW_ID_TAG, mRowId);
-        startService(newinIntent);
-        bindService(newinIntent, mConnection, 0);
-	}
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -646,5 +490,69 @@ public class AlertView extends Activity{
 		} catch (UnsupportedEncodingException e) {
 			Log.w(LOG_TAG, e.toString());
 		}
+	}
+
+	public void callHashDialog(Intent i) {
+		startActivityForResult(i, ACTIVITY_HASH_DIALOG);
+	}
+
+	public OnCancelListener getCancelListener() {
+		return new OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {
+				mDbHelper.close();
+				finish();
+				return;
+			}
+		};
+	}
+
+	public Context getContext() {
+		return this;
+	}
+
+	public ErrorMessageHandler getEMH() {
+		return mEMH;
+	}
+
+	public Long getRowId() {
+		return mRowId;
+	}
+
+	public void onBoundRequestSet() {
+		if(!mGotAlert){
+			// Display the progress dialog first
+			pd = ProgressDialog.show(AlertView.this, "", "Connecting. Please wait...", true);
+			Thread thread = new Thread(mNetRun);
+			thread.start();
+		} else {
+	    	fillData();
+		}
+	}
+
+	public void onCertErrorBegin() {
+		mGotAlert = true;
+	}
+
+	public void onCertificateInspectVerified() throws IOException, SAXException, XMLHandlerException, WebTransportException {
+		// construct the GET arguments string, send it to the XML handler
+		String extraArgs = "cid=" + mCid + "&sid=" + mSid;
+		mAlertXMLHandler.createElement(mNetRun.getBoundRequest(), "alert", extraArgs);
+	}
+
+	public void onDocumentValidReturned() {
+		mGotAlert = true;
+		mProtocol = mAlertXMLHandler.alert.protocol;
+		mHostname = mAlertXMLHandler.alert.hostname;
+		mInterfaceName = mAlertXMLHandler.alert.interface_name;
+		mPayload = mAlertXMLHandler.alert.payload;
+		mSport = mAlertXMLHandler.alert.sport;
+		mDport = mAlertXMLHandler.alert.dport;
+		mType = mAlertXMLHandler.alert.type;
+		mCode = mAlertXMLHandler.alert.code;
+		fillData();
+	}
+
+	public void onHandleMessageBegin() {
+		pd.dismiss();
 	}
 }
