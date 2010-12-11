@@ -32,12 +32,23 @@ public class NetworkRunnable implements Runnable{
 	private final int CERT_ERROR = 4;
 	private final int CERT_REJECTED = 0;
 	private final int CERT_ACCEPTED = 1;
+	private final int HAS_MANAGER_YES = 0;
+	private final int HAS_MANAGER_NO = 1;
 	private final String LOG_TAG = "com.legind.swinedroid.SuperClass.NetworkRunnable";
-	
+	private int mHasManager;
+
 	public NetworkRunnable(NetworkRunnableRequires parent){
 		this.parent = parent;
 		mDbHelper = new ServerDbAdapter(parent.getContext());
 		mDbHelper.open();
+		mHasManager = HAS_MANAGER_NO;
+	}
+	
+	public NetworkRunnable(NetworkRunnableRequires parent, ServerDbAdapter dbHelper, Request boundRequest){
+		this.parent = parent;
+		mDbHelper = dbHelper;
+		mBoundRequest = boundRequest;
+		mHasManager = HAS_MANAGER_YES;
 	}
 
 	private ServiceConnection mConnection = new ServiceConnection() {
@@ -59,13 +70,18 @@ public class NetworkRunnable implements Runnable{
 	}
 	
 	public void close(){
-		mDbHelper.close();
-		if(mBoundRequest != null)
-			parent.unbindService(mConnection);
+		if(mHasManager == HAS_MANAGER_NO){
+			mDbHelper.close();
+			if(mBoundRequest != null)
+				parent.unbindService(mConnection);
+		}
 	}
 	
 	public Request getBoundRequest(){
-		return mBoundRequest;
+		if(mHasManager == HAS_MANAGER_NO)
+			return mBoundRequest;
+		else
+			return null;
 	}
     
 	public void run() {

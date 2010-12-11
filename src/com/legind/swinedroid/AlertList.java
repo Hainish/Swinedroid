@@ -40,13 +40,14 @@ import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.NetworkRunnable.NetworkRunnable;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableManager;
 import com.legind.swinedroid.NetworkRunnable.NetworkRunnableRequires;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 import com.legind.web.WebTransport.WebTransportException;
 
-public class AlertList extends ListActivity{
+public class AlertList extends ListActivity implements NetworkRunnableRequires{
 	private Long mRowId;
 	private String mAlertSeverity;
 	private String mSearchTerm;
@@ -79,6 +80,7 @@ public class AlertList extends ListActivity{
     public static Activity LA = null;
     private static final int VIEW_ID = Menu.FIRST;
     private static final int DELETE_ID = Menu.FIRST + 1;
+    private NetworkRunnableManager mNetRunMan;
 	
 	public class AlertListTracker extends Object {
 		public long sid;
@@ -152,18 +154,14 @@ public class AlertList extends ListActivity{
 		}
 
 		public void onBoundRequestSet() {
-			switch(mFromCode){
-				case ALERTS_INITIAL:
-					if(!mGotAlerts){
-						// Display the progress dialog first
-						pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
-						
-						Thread thread = new Thread(initialAlertsRunnable.mNetRun);
-						thread.start();
-					} else {
-				    	fillData();
-					}
-				break;
+			if(!mGotAlerts){
+				// Display the progress dialog first
+				pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
+				
+				Thread thread = new Thread(initialAlertsRunnable.mNetRun);
+				thread.start();
+			} else {
+		    	fillData();
 			}
 		}
 

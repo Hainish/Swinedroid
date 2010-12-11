@@ -18,7 +18,6 @@ import android.content.DialogInterface.OnCancelListener;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.Window;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -68,8 +67,6 @@ public class ServerView extends Activity implements NetworkRunnableRequires{
 		mOverviewXMLHandler = new OverviewXMLHandler();
 		mGotStatistics = false;
 		
-		// Hide the title bar
-        this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.server_view);
 
 		// Display all errors on the Swinedroid ListActivity
