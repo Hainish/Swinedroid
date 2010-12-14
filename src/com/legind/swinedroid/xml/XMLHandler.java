@@ -23,6 +23,7 @@ import com.legind.web.WebTransport.WebTransportException;
 public class XMLHandler extends DefaultHandler{
 	private String errorString = null;
 	private StringBuilder stringFromCharacters;
+	private final String LOG_TAG = "com.legind.swinedroid.xml.XMLHandler";
 	
 	public void startElement(String uri, String name, String qName, Attributes atts){
 		if(name.trim().equals("error"))
@@ -63,7 +64,7 @@ public class XMLHandler extends DefaultHandler{
 				 throw new XMLHandlerException(errorString);
 			}
 		} catch (ParserConfigurationException e){
-			Log.e("Swinedroid",e.toString());
+			Log.e(LOG_TAG,e.toString());
 		}
 	}
 }

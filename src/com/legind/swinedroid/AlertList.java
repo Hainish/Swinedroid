@@ -16,11 +16,9 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -40,14 +38,16 @@ import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
 import com.legind.sqlite.ServerDbAdapter;
 import com.legind.swinedroid.NetworkRunnable.NetworkRunnable;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableBindRequires;
 import com.legind.swinedroid.NetworkRunnable.NetworkRunnableManager;
-import com.legind.swinedroid.NetworkRunnable.NetworkRunnableRequires;
+import com.legind.swinedroid.NetworkRunnable.NetworkRunnableUniqueRequires;
+import com.legind.swinedroid.RequestService.Request;
 import com.legind.swinedroid.xml.AlertListXMLElement;
 import com.legind.swinedroid.xml.AlertListXMLHandler;
 import com.legind.swinedroid.xml.XMLHandlerException;
 import com.legind.web.WebTransport.WebTransportException;
 
-public class AlertList extends ListActivity implements NetworkRunnableRequires{
+public class AlertList extends ListActivity implements NetworkRunnableBindRequires{
 	private Long mRowId;
 	private String mAlertSeverity;
 	private String mSearchTerm;
@@ -93,7 +93,7 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 		public byte sig_priority;
 	}
 	
-	private class AlertsDisplay implements NetworkRunnableRequires{
+	private class AlertsDisplay implements NetworkRunnableUniqueRequires{
 		private int mFromCode;
 	    public NetworkRunnable mNetRun;
 		
@@ -104,13 +104,9 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 		 * @param ctx the AlertList context from which it is called
 		 * @param fromCode how this runnable is called, either loading the inital alerts or additional alerts
 		 */
-		public AlertsDisplay(int fromCode){
+		public AlertsDisplay(int fromCode, NetworkRunnableBindRequires nrbr, ServerDbAdapter dbHelper, Request boundRequest){
 			mFromCode = fromCode;
-			mNetRun = new NetworkRunnable(this);
-		}
-
-		public boolean bindService(Intent service, ServiceConnection conn, int flags){
-			return LA.bindService(service, conn, flags);
+			mNetRun = new NetworkRunnable(this, nrbr, dbHelper, boundRequest);
 		}
 
 		public void callHashDialog(Intent i) {
@@ -122,10 +118,6 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 					startActivityForResult(i, ACTIVITY_HASH_DIALOG_ADDITIONAL);
 				break;
 			}
-		}
-
-		public void finish() {
-			LA.finish();
 		}
 
 		public OnCancelListener getCancelListener() {
@@ -141,28 +133,8 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 			};
 		}
 
-		public Context getContext() {
-			return LA;
-		}
-
 		public ErrorMessageHandler getEMH() {
 			return mEMH;
-		}
-
-		public Long getRowId() {
-			return mRowId;
-		}
-
-		public void onBoundRequestSet() {
-			if(!mGotAlerts){
-				// Display the progress dialog first
-				pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
-				
-				Thread thread = new Thread(initialAlertsRunnable.mNetRun);
-				thread.start();
-			} else {
-		    	fillData();
-			}
 		}
 
 		public void onCertErrorBegin() {
@@ -193,21 +165,13 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 
 		public void onHandleMessageBegin() {
 			switch(mFromCode){
-			case ALERTS_INITIAL:
-				pd.dismiss();
-			break;
-			case ALERTS_ADDITIONAL:
-				switcher.showPrevious();
-			break;
-		}
-		}
-
-		public ComponentName startService(Intent service) {
-			return LA.startService(service);
-		}
-
-		public void unbindService(ServiceConnection conn) {
-			LA.unbindService(conn);
+				case ALERTS_INITIAL:
+					pd.dismiss();
+				break;
+				case ALERTS_ADDITIONAL:
+					switcher.showPrevious();
+				break;
+			}
 		}
 		
 	}
@@ -238,8 +202,9 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 		switcher.addView(progressBar);
 		
 		// create the runnables for creating/expanding the alertsList
-		additionalAlertsRunnable = new AlertsDisplay(ALERTS_ADDITIONAL);
-		initialAlertsRunnable = new AlertsDisplay(ALERTS_INITIAL);
+		mNetRunMan = new NetworkRunnableManager(this); 
+		additionalAlertsRunnable = new AlertsDisplay(ALERTS_ADDITIONAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
+		initialAlertsRunnable = new AlertsDisplay(ALERTS_INITIAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
 		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
@@ -272,7 +237,7 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
 			}
 		}
 
-		initialAlertsRunnable.mNetRun.startRequestService();
+		mNetRunMan.startRequestService();
 		additionalAlertsRunnable.mNetRun.startRequestService();
 	}
 	
@@ -479,4 +444,24 @@ public class AlertList extends ListActivity implements NetworkRunnableRequires{
         i.putExtra(AlertDbAdapter.KEY_SIG_PRIORITY, tracker.sig_priority);
         startActivityForResult(i, ACTIVITY_VIEW);
     }
+
+	public Context getContext() {
+		return this;
+	}
+
+	public Long getRowId() {
+		return mRowId;
+	}
+
+	public void onBoundRequestSet() {
+		if(!mGotAlerts){
+			// Display the progress dialog first
+			pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
+			
+			Thread thread = new Thread(initialAlertsRunnable.mNetRun);
+			thread.start();
+		} else {
+	    	fillData();
+		}
+	}
 }

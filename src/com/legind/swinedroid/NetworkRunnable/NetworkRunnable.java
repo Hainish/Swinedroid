@@ -24,7 +24,8 @@ import com.legind.web.WebTransport.WebTransportException;
 public class NetworkRunnable implements Runnable{
 	private ServerDbAdapter mDbHelper;
 	private Request mBoundRequest;
-	private final NetworkRunnableRequires parent;
+	private final NetworkRunnableUniqueRequires nrur;
+	private final NetworkRunnableBindRequires nrbr;
 	private final int DOCUMENT_VALID = 0;
 	private final int IO_ERROR = 1;
 	private final int XML_ERROR = 2;
@@ -37,15 +38,17 @@ public class NetworkRunnable implements Runnable{
 	private final String LOG_TAG = "com.legind.swinedroid.SuperClass.NetworkRunnable";
 	private int mHasManager;
 
-	public NetworkRunnable(NetworkRunnableRequires parent){
-		this.parent = parent;
-		mDbHelper = new ServerDbAdapter(parent.getContext());
+	public NetworkRunnable(NetworkRunnableRequires nrr){
+		this.nrur = (NetworkRunnableUniqueRequires) nrr;
+		this.nrbr = (NetworkRunnableBindRequires) nrr;
+		mDbHelper = new ServerDbAdapter(nrbr.getContext());
 		mDbHelper.open();
 		mHasManager = HAS_MANAGER_NO;
 	}
 	
-	public NetworkRunnable(NetworkRunnableRequires parent, ServerDbAdapter dbHelper, Request boundRequest){
-		this.parent = parent;
+	public NetworkRunnable(NetworkRunnableUniqueRequires nrur, NetworkRunnableBindRequires nrbr, ServerDbAdapter dbHelper, Request boundRequest){
+		this.nrur = nrur;
+		this.nrbr = nrbr;
 		mDbHelper = dbHelper;
 		mBoundRequest = boundRequest;
 		mHasManager = HAS_MANAGER_YES;
@@ -54,7 +57,7 @@ public class NetworkRunnable implements Runnable{
 	private ServiceConnection mConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
 		    mBoundRequest = ((Request.RequestBinder)service).getService();
-		    parent.onBoundRequestSet();
+		    nrbr.onBoundRequestSet();
 		}
 		
 		public void onServiceDisconnected(ComponentName className) {
@@ -63,25 +66,22 @@ public class NetworkRunnable implements Runnable{
 	};
     
 	public void startRequestService() {
-        Intent newIntent = new Intent(parent.getContext(), Request.class);
-        newIntent.putExtra(Request.ROW_ID_TAG, parent.getRowId());
-        parent.startService(newIntent);
-        parent.bindService(newIntent, mConnection, 0);
+        Intent newIntent = new Intent(nrbr.getContext(), Request.class);
+        newIntent.putExtra(Request.ROW_ID_TAG, nrbr.getRowId());
+        nrbr.startService(newIntent);
+        nrbr.bindService(newIntent, mConnection, 0);
 	}
 	
 	public void close(){
 		if(mHasManager == HAS_MANAGER_NO){
 			mDbHelper.close();
 			if(mBoundRequest != null)
-				parent.unbindService(mConnection);
+				nrbr.unbindService(mConnection);
 		}
 	}
 	
 	public Request getBoundRequest(){
-		if(mHasManager == HAS_MANAGER_NO)
-			return mBoundRequest;
-		else
-			return null;
+		return mBoundRequest;
 	}
     
 	public void run() {
@@ -94,7 +94,7 @@ public class NetworkRunnable implements Runnable{
 			if(!mBoundRequest.inspectCertificate()){
 				handler.sendEmptyMessage(CERT_ERROR);
 			} else {
-				parent.onCertificateInspectVerified();
+				nrur.onCertificateInspectVerified();
 				handler.sendEmptyMessage(DOCUMENT_VALID);
 			}
 		} catch (IOException e) {
@@ -120,33 +120,33 @@ public class NetworkRunnable implements Runnable{
 	private volatile Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message message) {
-			parent.onHandleMessageBegin();
-			OnCancelListener cancelListener = parent.getCancelListener();
+			nrur.onHandleMessageBegin();
+			OnCancelListener cancelListener = nrur.getCancelListener();
 			switch(message.what){
 				case IO_ERROR:
-					parent.getEMH().DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
+					nrur.getEMH().DisplayErrorMessage("Could not connect to server.  Please ensure that your settings are correct and try again later.",cancelListener);
 				break;
 				case XML_ERROR:
-					parent.getEMH().DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
+					nrur.getEMH().DisplayErrorMessage("Server responded with an invalid XML document.  Please try again later.",cancelListener);
 				break;
 				case SERVER_ERROR:
-					parent.getEMH().DisplayErrorMessage((String) message.obj,cancelListener);
+					nrur.getEMH().DisplayErrorMessage((String) message.obj,cancelListener);
 				break;
 				case CERT_ERROR:
 					/*
 					 * If there is a certificate mismatch, display the ServerHashDialog activity
 					 */
 					// must set this to true, in case onPause happens for child activity
-					parent.onCertErrorBegin();
+					nrur.onCertErrorBegin();
 					//mBoundRequest.displayCertificateDialog(ServerView.this);
-		        	Intent i = new Intent(parent.getContext(), ServerHashDialog.class);
+		        	Intent i = new Intent(nrbr.getContext(), ServerHashDialog.class);
 		        	i.putExtra("SHA1", mBoundRequest.getLastServerCertSHA1());
 		        	i.putExtra("MD5", mBoundRequest.getLastServerCertMD5());
 		        	i.putExtra("CERT_INVALID", (mBoundRequest.getLastServerCertSHA1() == null && mBoundRequest.getLastServerCertMD5() == null ? false : true));
-		        	parent.callHashDialog(i);
+		        	nrur.callHashDialog(i);
 				break;
 				case DOCUMENT_VALID:
-					parent.onDocumentValidReturned();
+					nrur.onDocumentValidReturned();
 				break;
 			}
 
@@ -161,11 +161,11 @@ public class NetworkRunnable implements Runnable{
 			 */
 			switch(resultCode){
 				case CERT_REJECTED:
-					parent.finish();
+					nrbr.finish();
 				break;
 				case CERT_ACCEPTED:
 					Bundle extras = intent.getExtras();
-					mDbHelper.updateSeverHashes(parent.getRowId(), extras.getString("MD5"), extras.getString("SHA1"));
+					mDbHelper.updateSeverHashes(nrbr.getRowId(), extras.getString("MD5"), extras.getString("SHA1"));
 					mBoundRequest.fetchServerHashes();
 					Thread thread = new Thread(this);
 					thread.start();
