@@ -75,7 +75,7 @@ public class WebTransportConnection{
 		}
 	}
 	
-	public void handleDocument() throws IOException{
+	public void handleDocument() throws IOException, WebTransportException{
 		if(!lastHeaders.isEmpty()){
 			for(String header : lastHeaders){
 				if(header.contains("Content-Length: ")){
@@ -85,6 +85,7 @@ public class WebTransportConnection{
 				}
 			}
 		} else {
+			throw new WebTransportException("Empty Header");
 		}
 	}
 	

@@ -101,6 +101,9 @@ public class Request extends Service{
 				Log.e(LOG_TAG,e.toString());
 			} catch (KeyManagementException e){
 				Log.e(LOG_TAG,e.toString());
+			} catch (IOException e){
+				mCurrentRequestElement.webtransportconnection = null;
+				throw new IOException();
 			}
 		}
 	}
@@ -120,8 +123,10 @@ public class Request extends Service{
 		CertificateInspect serverCertificateInspect = new CertificateInspect(mCurrentRequestElement.webtransportconnection.getServerCertificate());
 		mLastServerCertMD5 = serverCertificateInspect.generateFingerprint("MD5");
 		mLastServerCertSHA1 = serverCertificateInspect.generateFingerprint("SHA1"); 
-		if(!mLastServerCertSHA1.equals(mCurrentRequestElement.mSHA1) || !mLastServerCertMD5.equals(mCurrentRequestElement.mMD5))
-        	return false;
+		if(!mLastServerCertSHA1.equals(mCurrentRequestElement.mSHA1) || !mLastServerCertMD5.equals(mCurrentRequestElement.mMD5)){
+			mCurrentRequestElement.webtransportconnection = null;
+			return false;
+		}
 		return true;
     }
     

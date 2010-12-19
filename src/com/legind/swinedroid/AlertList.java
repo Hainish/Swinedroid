@@ -203,8 +203,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 		
 		// create the runnables for creating/expanding the alertsList
 		mNetRunMan = new NetworkRunnableManager(this); 
-		additionalAlertsRunnable = new AlertsDisplay(ALERTS_ADDITIONAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
-		initialAlertsRunnable = new AlertsDisplay(ALERTS_INITIAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
 		
 		// set up the click listeners...
 		moreButton.setOnClickListener(new View.OnClickListener() {
@@ -238,7 +236,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 		}
 
 		mNetRunMan.startRequestService();
-		additionalAlertsRunnable.mNetRun.startRequestService();
 	}
 	
     @Override
@@ -454,6 +451,8 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 	}
 
 	public void onBoundRequestSet() {
+		additionalAlertsRunnable = new AlertsDisplay(ALERTS_ADDITIONAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
+		initialAlertsRunnable = new AlertsDisplay(ALERTS_INITIAL, this, mNetRunMan.getDbHelper(), mNetRunMan.getBoundRequest());
 		if(!mGotAlerts){
 			// Display the progress dialog first
 			pd = ProgressDialog.show(AlertList.this, "", "Connecting. Please wait...", true);
