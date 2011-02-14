@@ -3,7 +3,6 @@
     <string name="app_name">Swinedroid</string>
     <string name="menu_insert">Add Server</string>
     <string name="menu_delete">Delete Server</string>
-    <string name="menu_delete_alert">Delete Alert</string>
     <string name="menu_edit">Edit Server</string>
     <string name="host">Host</string>
     <string name="port">Port</string>
@@ -14,8 +13,8 @@
     <string name="ok">Ok</string>
     <string name="no_servers">No servers!</string>
     <string name="no_servers_cont">Please use the menu to add a server to monitor.</string>
-    <string name="download_server">If you have not used Swinedroid before, please be aware that this is only the client component.\nFor Swinedroid to work properly, you will need both the client and the server components running in unison.  To download the server component, please visit http://www.inputoutput.io/files/swinedroid-server_0.20.tar.gz and follow the instructions in the README file.</string>
-    <string name="license_info">Copyright (C) 2010 - William Budington\nLicensed under GPLv3</string>
+    <string name="download_server">If you have not used Swinedroid before, please be aware that this is only the client component.\nFor Swinedroid to work properly, you will need both the client and the server components running in unison.  To download the server component, please visit http://www.inputoutput.io/files/swinedroid-server_0.25.tar.gz and follow the instructions in the README file.</string>
+    <string name="license_info">Copyright (C) 2011 - William Budington\nLicensed under GPLv3</string>
     <string name="menu_refresh">Refresh Statistics</string>
     <string name="search_alerts">Search Alerts</string>
     <string name="alert_severity">Alert Severity</string>

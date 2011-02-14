@@ -23,16 +23,11 @@ import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.ContextMenu;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.ViewSwitcher;
-import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.legind.Dialogs.ErrorMessageHandler;
 import com.legind.sqlite.AlertDbAdapter;
@@ -78,8 +73,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 	private ArrayList<AlertListTracker> AlertListTracker = new ArrayList<AlertListTracker>();
 	private ErrorMessageHandler mEMH;
     public static Activity LA = null;
-    private static final int VIEW_ID = Menu.FIRST;
-    private static final int DELETE_ID = Menu.FIRST + 1;
     private NetworkRunnableManager mNetRunMan;
 	
 	public class AlertListTracker extends Object {
@@ -236,28 +229,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 		}
 
 		mNetRunMan.startRequestService();
-	}
-	
-    @Override
-	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-		super.onCreateContextMenu(menu, v, menuInfo);
-        menu.add(0, VIEW_ID, 0, R.string.menu_delete_alert);
-        menu.add(0, DELETE_ID, 1, R.string.menu_delete_alert);
-	}
-
-    @Override
-	public boolean onContextItemSelected(MenuItem item) {
-		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		switch(item.getItemId()) {
-    	case DELETE_ID:
-			Context context = getApplicationContext();
-			CharSequence text = Long.toString(info.id);
-	        AlertListTracker tracker = AlertListTracker.get((int)info.id);
-			Thread additionalAlertsThread = new Thread(additionalAlertsRunnable.mNetRun);
-			additionalAlertsThread.start();
-	        return true;
-		}
-		return super.onContextItemSelected(item);
 	}
     
 	@Override
