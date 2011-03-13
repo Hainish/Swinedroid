@@ -119,7 +119,7 @@ public class ServerDbAdapter extends DbAdapter{
 	 * @param sha1 value to set server sha1 to
 	 * @return true if the server was successfully updated, false otherwise 
 	 */
-	public boolean updateSeverHashes(long rowId, String md5, String sha1){
+	public boolean updateServerHashes(long rowId, String md5, String sha1){
 	    ContentValues args = new ContentValues();
 	    args.put(KEY_MD5, md5);
 	    args.put(KEY_SHA1, sha1);

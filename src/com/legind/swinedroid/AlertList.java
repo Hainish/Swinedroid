@@ -50,7 +50,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 	private String mEndingDatetime;
 	private AlertListXMLHandler mAlertListXMLHandler;
 	private ProgressDialog pd;
-	private ServerDbAdapter mDbHelper;
 	private AlertDbAdapter mAlertDbHelper;
 	private final String LOG_TAG = "com.legind.swinedroid.AlertList";
 	private boolean mGotAlerts;
@@ -175,8 +174,6 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
     	LA = this;
     	// Open up the XML and db handlers
 		mAlertListXMLHandler = new AlertListXMLHandler();
-		mDbHelper = new ServerDbAdapter(this);
-		mDbHelper.open();
 		mAlertDbHelper = new AlertDbAdapter(this);
 		mAlertDbHelper.open();
 		// initial value of mGotAlerts is false
@@ -272,7 +269,7 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
         				mGotAlerts = false;
         				pd = ProgressDialog.show(this, "", "Connecting. Please wait...", true);
         				Bundle extras = intent.getExtras();
-        				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+        				mNetRunMan.getDbHelper().updateServerHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
         				Thread thread = new Thread(initialAlertsRunnable.mNetRun);
         				thread.start();
         			break;
@@ -284,7 +281,7 @@ public class AlertList extends ListActivity implements NetworkRunnableBindRequir
 	    			break;
 	    			case CERT_ACCEPTED:
 	    				Bundle extras = intent.getExtras();
-	    				mDbHelper.updateSeverHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
+        				mNetRunMan.getDbHelper().updateServerHashes(mRowId, extras.getString("MD5"), extras.getString("SHA1"));
         				initialAlertsRunnable.mNetRun.getBoundRequest().fetchServerHashes();
 	    				switcher.showNext();
 	    				Thread thread = new Thread(additionalAlertsRunnable.mNetRun);

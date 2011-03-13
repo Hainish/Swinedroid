@@ -165,7 +165,7 @@ public class NetworkRunnable implements Runnable{
 				break;
 				case CERT_ACCEPTED:
 					Bundle extras = intent.getExtras();
-					mDbHelper.updateSeverHashes(nrbr.getRowId(), extras.getString("MD5"), extras.getString("SHA1"));
+					mDbHelper.updateServerHashes(nrbr.getRowId(), extras.getString("MD5"), extras.getString("SHA1"));
 					mBoundRequest.fetchServerHashes();
 					Thread thread = new Thread(this);
 					thread.start();
